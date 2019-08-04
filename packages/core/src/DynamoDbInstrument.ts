@@ -97,7 +97,7 @@ export class DynamoDbInstrument extends Instrument {
             import * as AWS from 'aws-sdk'
 
             export function(region: string, arn: string) {
-                
+                    
             } 
         `
     }

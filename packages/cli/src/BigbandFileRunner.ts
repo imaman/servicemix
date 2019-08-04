@@ -241,6 +241,13 @@ export class BigbandFileRunner {
             const mapping = {};
             // TODO(imaman): coverage
             for (const wireModel of instrumentModel.wirings) {
+                const reg = wireModel.supplier.section.section.region
+                const arn = wireModel.supplier.arn
+                const src = wireModel.supplier.instrument.contributeToConsumerCode(reg, arn)
+                if (src) {
+                    console.log('src=' + src)
+                    process.exit(-1)
+                }
                 mapping[wireModel.name] = {name: wireModel.supplier.physicalName, region: section.region};
             }
 

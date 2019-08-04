@@ -68,6 +68,10 @@ export abstract class Instrument {
      */
     abstract contributeToConsumerDefinition(section: Section, consumerDef: Definition, myArn: string): void
 
+    contributeToConsumerCode(region: string, myArn: string): string {
+        return ""
+    }
+
     /**
      * Returns the AWS service namespace to be used when constructing the ARN of this instrument. For instance, in a
      * an ARN of a lambda function, "arn:aws:lambda:eu-west-2:111111111111:function:my-function", this is the "lamda"

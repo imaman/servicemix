@@ -141,6 +141,17 @@ export class LambdaInstrument extends Instrument {
         }));
     }
 
+    contributeToConsumerCode(region: string, myArn: string): string {
+        return `
+            import * as AWS from 'aws-sdk'
+
+            export function(region: string, arn: string) {
+                    
+            } 
+        `
+    }
+
+
     getNavigationItems(path: CompositeName, arn: string, physicalName: string, awsFactory: AwsFactory): Map<string, NavigationItem> {
         const info = (s: string) => this.getDefinition().get()
         const desc = (s: string) => awsFactory.newLambda().getFunction({FunctionName: arn}).promise()
