@@ -97,7 +97,7 @@ describe('BigbandFileRunner', () => {
             return stdout.join('\n').trim()
         }
 
-        it.only("compiles", async () => {
+        it("compiles", async () => {
             const f1 = new LambdaInstrument("p1", "f1", "file_1")
             
             const spec: BigbandSpec = {
