@@ -238,6 +238,8 @@ export class BigbandFileRunner {
             };
             zb.forEach(fingerprintCalculator);
 
+            const bigbandFolderFragment = new DeployableFragment()
+
             const mapping = {};
             // TODO(imaman): coverage
             for (const wireModel of instrumentModel.wirings) {
@@ -245,13 +247,12 @@ export class BigbandFileRunner {
                 const arn = wireModel.supplier.arn
                 const src = wireModel.supplier.instrument.contributeToConsumerCode(reg, arn)
                 if (src) {
-                    console.log('src=' + src)
-                    process.exit(-1)
+                    // TODO(imaman): wiremodel.name should be legal file name
+                    bigbandFolderFragment.add(new DeployableAtom(`bigband/wires/${wireModel.name}.ts`, src))
                 }
                 mapping[wireModel.name] = {name: wireModel.supplier.physicalName, region: section.region};
             }
 
-            const bigbandFolderFragment = new DeployableFragment()
             bigbandFolderFragment.add(new DeployableAtom('bigband/deps.js', 
                 `module.exports = ${JSON.stringify(mapping)}`));
         
