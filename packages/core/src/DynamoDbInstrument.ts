@@ -92,15 +92,15 @@ export class DynamoDbInstrument extends Instrument {
         }));
     }
 
-    contributeToConsumerCode(region: string, myArn: string): string {
-        return `
-            import * as AWS from 'aws-sdk'
+    // contributeToConsumerCode(region: string, myArn: string): string {
+    //     return `
+    //         import * as AWS from 'aws-sdk'
 
-            export function(region: string, arn: string) {
+    //         export function(region: string, arn: string) {
                     
-            } 
-        `
-    }
+    //         } 
+    //     `
+    // }
 
     arnService(): string {
         return 'dynamodb';

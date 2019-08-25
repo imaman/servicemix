@@ -143,10 +143,10 @@ export class LambdaInstrument extends Instrument {
 
     contributeToConsumerCode(region: string, myArn: string): string {
         return `
-            import * as AWS from 'aws-sdk'
+            import { LambdaClient } from 'bigband-lambda'
 
-            export function(region: string, arn: string) {
-                    
+            export function() {
+                return new LambdaClient("${region}", "${myArn}")
             } 
         `
     }

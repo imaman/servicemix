@@ -22,6 +22,12 @@ const placeFinder = new LambdaInstrument('geography', 'site-finder4', 'src/geogr
     Timeout: 29
 });
 
+const placeFinder2 = new LambdaInstrument('geography', 'site-finder5', 'src/geography/placeFinder', {
+    Description: 'foo bar',
+    MemorySize: 512,
+    Timeout: 5
+});
+
 const distanceTable = new DynamoDbInstrument('geography', 'distances4', {name: 'dist', type: DynamoDbAttributeType.NUMBER});
 
 
@@ -52,8 +58,9 @@ export function run() {
         sections: [
             {
                 section: prod,
-                instruments: [placeFinder, distanceTable],
+                instruments: [placeFinder, placeFinder2, distanceTable],
                 wiring: [
+                    wire(placeFinder, "pl2", placeFinder2),
                     wire(placeFinder, "distanceTable", distanceTable)
                 ]
             },
