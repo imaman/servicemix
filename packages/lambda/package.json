@@ -36,5 +36,8 @@
   "files": [
     "lib/**/*"
   ],
-  "gitHead": "d39d617593eb495e92aaa9b89cdbbadd70462eca"
+  "gitHead": "d39d617593eb495e92aaa9b89cdbbadd70462eca",
+  "dependencies": {
+    "aws-sdk": "^2.517.0"
+  }
 }
