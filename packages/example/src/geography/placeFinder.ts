@@ -6,7 +6,7 @@ import { AbstractController } from 'bigband-lambda';
 
 
 
-class PlaceFinderController extends AbstractController<any, any> {
+export default class PlaceFinderController extends AbstractController<any, any> {
     executeScheduledEvent(): void {}
     
     async executeInputEvent(event: any): Promise<any> {
@@ -42,7 +42,7 @@ class PlaceFinderController extends AbstractController<any, any> {
     }
 }
 
-export const controller = new PlaceFinderController()
+//export const controller = new PlaceFinderController()
 
 // Run command (from the bigband directory):
 // bigband-example.sh invoke --function-name placeFinder --input '{"query": "United Kingdom"}'

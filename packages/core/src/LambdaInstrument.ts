@@ -103,11 +103,13 @@ export class LambdaInstrument extends Instrument {
 
 
         const content = `
-            import {controller} from '${requireExpression}';
-            const mapping = require('../../../bigband/deps.js');
-            const fp = require('../../../bigband/build_manifest.js');
+            import Controller from '${requireExpression}'
+            const mapping = require('../../../bigband/deps.js')
+            const fp = require('../../../bigband/build_manifest.js')
 
+            const controller = new Controller()
             controller.initialize(mapping, fp)
+
             export function handle(event, context, callback) {
                 try {
                     return Promise.resolve()

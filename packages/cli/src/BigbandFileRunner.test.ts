@@ -110,14 +110,46 @@ describe('BigbandFileRunner', () => {
             }
 
             const content = `
-                class MyController {
+                export default class Controller {
                     executeScheduledEvent(): void {}
                     
                     async runLambda(event: any, context: any): Promise<any> {                
                         return "context.a=" + context.a + ", event.b=" + event.b
                     }
 
-                    initialize(a, b) {}
+                    initialize(x, y) {}
+                }
+                `
+            const output = await compileAndRun(spec, "r1/s1/p1/f1", content, {context: {a: 1}, event: {b: 2}})
+            expect(JSON.parse(output)).to.eql("context.a=1, event.b=2")
+        })
+        it("compiles and injects wires", async () => {
+            const f1 = new LambdaInstrument("p1", "f1", "file_1")
+            const f2 = new LambdaInstrument("p1", "f2", "file_2")
+            
+            const spec: BigbandSpec = {
+                bigband: b,
+                sections: [{
+                    section: new Section("r1", "s1"), 
+                    instruments: [f1, f2],
+                    wiring: [wire(f1, "w1", f2)]
+                }]
+            }
+
+            const content = `
+                interface D {
+                    w1: any
+                }
+
+                export default class MyController {
+                    constructor(private readonly d: D) {}
+                    executeScheduledEvent(): void {}
+                    
+                    async runLambda(event: any, context: any): Promise<any> {                
+                        return "c.a=" + context.a + ", e.b=" + event.b
+                    }
+
+                    initialize(x, y) {}
                 }
                 
                 export const controller = new MyController()
