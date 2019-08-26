@@ -47,6 +47,8 @@ describe('BigbandFileRunner', () => {
             const nodeModules = path.resolve(dir, 'node_modules')
             fs.mkdirSync(nodeModules)
             fs.symlinkSync(path.resolve(__dirname, '../node_modules/@types'), path.resolve(nodeModules, '@types'), 
+                'dir')            
+            fs.symlinkSync(path.resolve(__dirname, '../../lambda/lib'), path.resolve(nodeModules, 'bigband-lambda'), 
                 'dir')
             const srcFile = path.resolve(dir, (instrument.instrument as LambdaInstrument).getEntryPointFile() + '.ts')
 
@@ -77,6 +79,7 @@ describe('BigbandFileRunner', () => {
             `
             fs.writeFileSync(stubFile, stubFileContent)
 
+            // TODO(imaman): use the cp wrapper used elsewhere.
             const cp = child_process.fork(stubFile, [], {stdio: "pipe"})
 
             const stdout: string[] = []
@@ -137,22 +140,20 @@ describe('BigbandFileRunner', () => {
             }
 
             const content = `
+                import {LambdaClient} from 'bigband-lambda'
                 interface D {
-                    w1: any
+                    w1: LambdaClient
                 }
 
                 export default class MyController {
-                    constructor(private readonly d: D) {}
                     executeScheduledEvent(): void {}
                     
                     async runLambda(event: any, context: any): Promise<any> {                
                         return "c.a=" + context.a + ", e.b=" + event.b
                     }
 
-                    initialize(x, y) {}
+                    initialize(x: D, y) {}
                 }
-                
-                export const controller = new MyController()
                 `
             const output = await compileAndRun(spec, "r1/s1/p1/f1", content, {context: {a: 1}, event: {b: 2}})
             expect(JSON.parse(output)).to.eql("context.a=1, event.b=2")

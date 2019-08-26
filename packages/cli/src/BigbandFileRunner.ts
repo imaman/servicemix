@@ -226,6 +226,30 @@ export class BigbandFileRunner {
             logger.info(`Compiling ${instrument.fullyQualifiedName()}`);
             const handlerFragment = instrument.createFragment(`../..`);
             const packager = new Packager(d, npmPackageDir, this.awsFactory, this.blobPool, handlerFragment);
+
+
+            const lines: string[] = []
+
+            const mapping = {};
+            // TODO(imaman): coverage
+            for (const wireModel of instrumentModel.wirings) {
+                const reg = wireModel.supplier.section.section.region
+                const arn = wireModel.supplier.arn
+                const src = wireModel.supplier.instrument.contributeToConsumerCode(reg, arn)
+                const name = wireModel.name
+                if (src) {
+                    // TODO(imaman): wiremodel.name should be legal file name
+                    handlerFragment.add(new DeployableAtom(`${name}.ts`, src))
+                    lines.push(`import ${name} from './${name}'`)
+                }
+                // mapping[wireModel.name] = {name: wireModel.supplier.physicalName, region: section.region};
+            }
+
+            lines.push('export default {')
+            lines.push(instrumentModel.wirings.map(w => `  ${w.name}`).join(',\n'))
+            lines.push('}')
+
+            handlerFragment.add(new DeployableAtom('wiresobject.ts', lines.join('\n')));
     
             const zb: ZipBuilder = await packager.run(instrument.getEntryPointFile(), pathPrefix,
                     (instrument as LambdaInstrument).getNpmPackage(),
@@ -240,21 +264,9 @@ export class BigbandFileRunner {
 
             const bigbandFolderFragment = new DeployableFragment()
 
-            const mapping = {};
-            // TODO(imaman): coverage
-            for (const wireModel of instrumentModel.wirings) {
-                const reg = wireModel.supplier.section.section.region
-                const arn = wireModel.supplier.arn
-                const src = wireModel.supplier.instrument.contributeToConsumerCode(reg, arn)
-                if (src) {
-                    // TODO(imaman): wiremodel.name should be legal file name
-                    bigbandFolderFragment.add(new DeployableAtom(`bigband/wires/${wireModel.name}.ts`, src))
-                }
-                mapping[wireModel.name] = {name: wireModel.supplier.physicalName, region: section.region};
-            }
 
-            bigbandFolderFragment.add(new DeployableAtom('bigband/deps.js', 
-                `module.exports = ${JSON.stringify(mapping)}`));
+            // bigbandFolderFragment.add(new DeployableAtom('bigband/deps.ts', 
+            //     `export default const wires  = ${JSON.stringify(mapping)}`));
         
             bigbandFolderFragment.forEach(fingerprintCalculator);
     

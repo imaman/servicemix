@@ -104,11 +104,11 @@ export class LambdaInstrument extends Instrument {
 
         const content = `
             import Controller from '${requireExpression}'
-            const mapping = require('../../../bigband/deps.js')
+            import wires from './wiresobject'
             const fp = require('../../../bigband/build_manifest.js')
 
             const controller = new Controller()
-            controller.initialize(mapping, fp)
+            controller.initialize(wires, fp)
 
             export function handle(event, context, callback) {
                 try {
@@ -147,9 +147,7 @@ export class LambdaInstrument extends Instrument {
         return `
             import { LambdaClient } from 'bigband-lambda'
 
-            export function() {
-                return new LambdaClient("${region}", "${myArn}")
-            } 
+            export default new LambdaClient("${region}", "${myArn}")
         `
     }
 
