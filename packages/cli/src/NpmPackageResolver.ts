@@ -83,7 +83,7 @@ export class NpmPackageResolver {
         for (const r of this.roots) {
             // TODO(imaman): generate friendlier output on errors
 
-            const execution = await Spawner.exec('npm', ['ls', '--long', '--json'], r)
+            const execution = await Spawner.exec('npm', ['ls', '--long', '--json'], r, 30000)
             const npmLsPojo = JSON.parse(execution.stdout);
             if (!npmLsPojo.name || !npmLsPojo.version) {
                 throw new Error(`Failure from ${execution.commandLine}: Exit code=${execution.exitCode}, stdout=\n${execution.stdout}`);

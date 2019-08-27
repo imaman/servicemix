@@ -38,11 +38,11 @@ class BoundedString {
 
 export class Spawner {
 
-    static exec(command: string, args: string[], cwd: string): Promise<Execution> {
+    static exec(command: string, args: string[], cwd: string, timeoutInMillis: number): Promise<Execution> {
         const commandLine = `${cwd}$ ${command} ${args.join(' ')}`
         return new Promise<Execution>((resolve, reject) => {
-            wait(10000).then(() => reject(new Error(
-                'Timedout while waiting for the following command to complete:\n' + commandLine)))
+            wait(timeoutInMillis).then(() => reject(new Error(
+                `Timedout after ${timeoutInMillis}ms while waiting for the following command to complete:\n${commandLine}`)))
 
                 const stderr = new BoundedString("stderr", 1024 * 1024 * 50, reject)
                 const stdout = new BoundedString("stdout", 1024 * 1024 * 50, reject)

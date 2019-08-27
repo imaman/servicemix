@@ -90,7 +90,7 @@ export class Packager {
         '--rootDir', this.rootDir]
     args = args.concat(startingPoints)
 
-    const execution = await Spawner.exec('tsc', args, this.rootDir)
+    const execution = await Spawner.exec('tsc', args, this.rootDir, 30000)
     if (execution.exitCode !== 0) {
       logger.info(`Compilation of ${startingPoints} failed:\n${execution.stderr}\n${execution.stdout}`)
       process.exit(-1)
