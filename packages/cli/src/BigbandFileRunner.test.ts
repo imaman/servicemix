@@ -60,6 +60,13 @@ describe('BigbandFileRunner', () => {
             const outDir = tmp.dirSync().name
             temp.zb.unzip(outDir)
 
+            const outNodeModules = path.resolve(outDir, 'node_modules')
+            if (!fs.existsSync(outNodeModules)) {
+                fs.mkdirSync(outNodeModules)
+            }
+            fs.symlinkSync(path.resolve(__dirname, '../../lambda/node_modules/aws-sdk'),
+                path.resolve(outNodeModules, 'aws-sdk'), 'dir')
+
             const stubFile = path.resolve(outDir, "stub.js")
 
             const stubFileContent = `
