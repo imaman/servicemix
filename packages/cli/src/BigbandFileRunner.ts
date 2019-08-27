@@ -229,20 +229,17 @@ export class BigbandFileRunner {
 
 
             const lines: string[] = []
-
-            const mapping = {};
-            // TODO(imaman): coverage
             for (const wireModel of instrumentModel.wirings) {
                 const reg = wireModel.supplier.section.section.region
                 const arn = wireModel.supplier.arn
                 const src = wireModel.supplier.instrument.contributeToConsumerCode(reg, arn)
+                // TODO(imaman): name should be valid TS identifier
                 const name = wireModel.name
                 if (src) {
                     // TODO(imaman): wiremodel.name should be legal file name
                     handlerFragment.add(new DeployableAtom(`${name}.ts`, src))
                     lines.push(`import ${name} from './${name}'`)
                 }
-                // mapping[wireModel.name] = {name: wireModel.supplier.physicalName, region: section.region};
             }
 
             lines.push('export default {')
