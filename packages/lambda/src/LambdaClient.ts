@@ -4,7 +4,7 @@ import { InvocationRequest } from 'aws-sdk/clients/lambda';
 export class LambdaClient {
     private readonly lambda: AWS.Lambda
 
-    constructor(region: string, private readonly arn: string) {
+    constructor(private readonly region: string, private readonly arn: string) {
         this.lambda = new AWS.Lambda({region})
     }
 
@@ -23,5 +23,9 @@ export class LambdaClient {
             throw new Error('Lambda invocation (' + this.arn + ') failed: \n' + JSON.stringify(parsedPayload))
         }
         return parsedPayload
+    }
+
+    toString(): string {
+        return `(LambdaClient region "${this.region}", ARN "${this.arn}")`
     }
 }

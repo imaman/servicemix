@@ -35,9 +35,9 @@ describe('BigbandFileRunner', () => {
 
     describe("compilation", () => {
 
-        async function compileAndRun(bigbandSpec, pathToInstrument, content: string, input: LambdaInput) {
+        async function compileAndRun(bigbandSpec, pathToInstrument, accountId: string, content: string, input: LambdaInput) {
 
-            const bigbandModel = new BigbandModel(bigbandSpec, "somedir")
+            const bigbandModel = new BigbandModel(bigbandSpec, "somedir", accountId)
             const instrument = bigbandModel.getInstrument(pathToInstrument)
             
             const bigbandFileRunner = new BigbandFileRunner(bigbandModel, 
@@ -130,7 +130,7 @@ describe('BigbandFileRunner', () => {
                     initialize(x, y) {}
                 }
                 `
-            const output = await compileAndRun(spec, "r1/s1/p1/f1", content, {context: {a: 1}, event: {b: 2}})
+            const output = await compileAndRun(spec, "r1/s1/p1/f1", "", content, {context: {a: 1}, event: {b: 2}})
             expect(JSON.parse(output)).to.eql("context.a=1, event.b=2")
         })
         it("compiles and injects wires", async () => {
@@ -153,17 +153,21 @@ describe('BigbandFileRunner', () => {
                 }
 
                 export default class MyController {
+                    private d: D
                     executeScheduledEvent(): void {}
                     
                     async runLambda(event: any, context: any): Promise<any> {                
-                        return "c.a=" + context.a + ", e.b=" + event.b
+                        return "w1=" + this.d.w1 
                     }
 
-                    initialize(x: D, y) {}
+                    initialize(d: D, y) {
+                        this.d = d;
+                    }
                 }
                 `
-            const output = await compileAndRun(spec, "r1/s1/p1/f1", content, {context: {a: 1}, event: {b: 2}})
-            expect(JSON.parse(output)).to.eql("context.a=1, event.b=2")
+            const output = await compileAndRun(spec, "r1/s1/p1/f1", 'a-id-600', content, 
+                {context: {a: 1}, event: {b: 2}})
+            expect(JSON.parse(output)).to.eql('w1=(LambdaClient region "r1", ARN "arn:aws:lambda:r1:a-id-600:function:b-s1-p1-f2")')
         })
     })
 
