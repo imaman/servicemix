@@ -227,7 +227,6 @@ export class BigbandFileRunner {
             const handlerFragment = instrument.createFragment(`../..`);
             const packager = new Packager(d, npmPackageDir, this.awsFactory, this.blobPool, handlerFragment);
 
-
             const lines: string[] = []
             for (const wireModel of instrumentModel.wirings) {
                 const reg = wireModel.supplier.section.section.region
@@ -260,10 +259,6 @@ export class BigbandFileRunner {
             zb.forEach(fingerprintCalculator);
 
             const bigbandFolderFragment = new DeployableFragment()
-
-
-            // bigbandFolderFragment.add(new DeployableAtom('bigband/deps.ts', 
-            //     `export default const wires  = ${JSON.stringify(mapping)}`));
         
             bigbandFolderFragment.forEach(fingerprintCalculator);
     
