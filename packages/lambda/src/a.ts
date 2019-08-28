@@ -2,11 +2,18 @@ import {DynamoDbClient} from './DynamoDbClient'
 
 
 //const c = new DynamoDbClient('eu-west-2', 'arn:aws:dynamodb:eu-west-2:196625562809:table/bb-example-d38-prod-geography-distances4')
-const c = new DynamoDbClient('eu-west-2', 'bb-example-d38-prod-geography-distances4')
+const c = new DynamoDbClient('eu-west-2', 'bb-example-d38-prod-misc-history')
 
 async function run() {
-    await c.put({dist: -8, numAnswers: -80, query: '-800'})
-    for await (const x of c.query({':d': -8}, 'dist = :d')) {
+    // const t0 = Date.now()
+    // for (let i = 0; i < 200; ++i) {
+    //     await c.put({id: 'b', t: 2000 + i, query: 'qa_' + i})
+    // }
+    // const t1 = Date.now()
+    // const dt = (t1 - t0) / 1000;
+    // console.log('dt=' + dt)
+
+    for await (const x of c.query({v1: 'b'}, 'id = :v1', 10, '', 'id,t')) {
         console.log('x=' + JSON.stringify(x))
     }
 } 

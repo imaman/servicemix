@@ -22,13 +22,13 @@ import { GetItemInput, QueryInput, QueryOutput } from 'aws-sdk/clients/dynamodb'
 export class DynamoDbClient {
     private readonly docClient: AWS.DynamoDB.DocumentClient
 
-    constructor(private readonly region: string, private readonly arn: string) {
+    constructor(private readonly region: string, private readonly tableName: string) {
         this.docClient = new AWS.DynamoDB.DocumentClient({region})
     }
 
     async put(item: any): Promise<any> {
         const req = {
-            TableName: this.arn,
+            TableName: this.tableName,
             Item: item
         }
 
@@ -39,14 +39,14 @@ export class DynamoDbClient {
         }
     }
 
-    async get(key: any, ...attributeNames: string[]): Promise<any> {
+    async get(key: any, ...attributesToGet: string[]): Promise<any> {
         const req: GetItemInput = {
-            TableName: this.arn,
+            TableName: this.tableName,
             Key: key,
         }
 
-        if (attributeNames.length) {
-            req.AttributesToGet = attributeNames
+        if (attributesToGet.length) {
+            req.AttributesToGet = attributesToGet
         }
 
         try {
@@ -64,36 +64,52 @@ export class DynamoDbClient {
      * @param filterExpression example: 'contains (Subtitle, :topic)'
      * @param attributeNames 
      */
-    async* query(expressionAttributeValues: any, keyConditionExpression: string, filterExpression: string = '', 
-            attributeNames: string[] = []) {
+    async* query(expressionAttributeValues: any, keyConditionExpression: string, limit: number, filterExpression: string = '', 
+            projectionExpression: string = '') {
+        if (limit <= 0) {
+            throw new Error(`limit (${limit}) cannot be negative`)
+        }
+        for (const k in expressionAttributeValues) {
+            if (k.startsWith(':')) {
+                continue
+            }
+
+            const v = expressionAttributeValues[k]
+            expressionAttributeValues[':' + k] = v
+            delete expressionAttributeValues[k]
+        }
+
         const req: QueryInput = {
-            TableName: this.arn,
+            TableName: this.tableName,
             ExpressionAttributeValues: expressionAttributeValues,
-            KeyConditionExpression: keyConditionExpression
+            KeyConditionExpression: keyConditionExpression,
+            ProjectionExpression: projectionExpression
         };
 
         if (filterExpression) {
             req.FilterExpression = filterExpression
         }
 
-        //  = {
-        //     TableName: this.arn,
-        //     Key: key,
-        // }
-
-        // if (attributeNames.length) {
-        //     req.AttributesToGet = attributeNames
-        // }
-
         try {
-            const resp: QueryOutput = await this.docClient.query(req).promise()
-            yield* resp.Items || []
+            while (limit > 0) {
+                req.Limit = limit
+                const resp: QueryOutput = await this.docClient.query(req).promise()
+                const items = resp.Items || []
+                yield* items
+                limit -= items.length
+
+                if (!resp.LastEvaluatedKey) {
+                    return
+                }
+
+                req.ExclusiveStartKey = resp.LastEvaluatedKey
+            }
         } catch(e) {
             throw new Error(`Get operation failed on ${this}: ${e.message}`)
         }
     }
 
     toString(): string {
-        return `(DynamoDbClient region "${this.region}" ARN "${this.arn}")`
+        return `(DynamoDbClient region "${this.region}" ARN "${this.tableName}")`
     }
 }
