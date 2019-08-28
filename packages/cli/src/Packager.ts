@@ -85,9 +85,8 @@ export class Packager {
     // const filesToCompile = startingPoints.map(curr => (`"${curr}"`)).join(' ')
     // logger.silly(`Compiling ${st}`);
 
-    // '--allowJs'
     let args: string[] = ['--outDir', outDir, '--preserveConstEnums', '--strictNullChecks', '--sourceMap', 
-        '--target', 'es2015', '--module', 'commonjs', '--checkJs', 'false', '--lib', 'es2015,dom', 
+        '--target', 'es2015', '--module', 'commonjs', '--allowJs', '--checkJs', 'false', '--lib', 'es2015,dom', 
         '--rootDir', this.rootDir]
     args = args.concat(startingPoints)
 
