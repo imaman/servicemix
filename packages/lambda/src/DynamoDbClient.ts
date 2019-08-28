@@ -1,5 +1,8 @@
 import * as AWS from 'aws-sdk'
-import { PutItemOutput, GetItemInput } from 'aws-sdk/clients/dynamodb';
+import { GetItemInput, QueryInput, QueryOutput } from 'aws-sdk/clients/dynamodb';
+
+
+(Symbol as any).asyncIterator = Symbol.asyncIterator || Symbol.for("Symbol.asyncIterator");
 
 // const client = new AWS.DynamoDB.DocumentClient({region: this.mapping.distanceTable.region});
 // const q = event.query;
@@ -49,6 +52,42 @@ export class DynamoDbClient {
         try {
             const resp = await this.docClient.get(req).promise()
             return resp.Item
+        } catch(e) {
+            throw new Error(`Get operation failed on ${this}: ${e.message}`)
+        }
+    }
+
+    /**
+     * 
+     * @param expressionAttributeValues example: {':s': 2, ':e': 9, ':topic': 'PHRASE'}
+     * @param keyConditionExpression example: 'Season = :s and Episode > :e'
+     * @param filterExpression example: 'contains (Subtitle, :topic)'
+     * @param attributeNames 
+     */
+    async* query(expressionAttributeValues: any, keyConditionExpression: string, filterExpression: string = '', 
+            attributeNames: string[] = []) {
+        const req: QueryInput = {
+            TableName: this.arn,
+            ExpressionAttributeValues: expressionAttributeValues,
+            KeyConditionExpression: keyConditionExpression
+        };
+
+        if (filterExpression) {
+            req.FilterExpression = filterExpression
+        }
+
+        //  = {
+        //     TableName: this.arn,
+        //     Key: key,
+        // }
+
+        // if (attributeNames.length) {
+        //     req.AttributesToGet = attributeNames
+        // }
+
+        try {
+            const resp: QueryOutput = await this.docClient.query(req).promise()
+            yield* resp.Items || []
         } catch(e) {
             throw new Error(`Get operation failed on ${this}: ${e.message}`)
         }
