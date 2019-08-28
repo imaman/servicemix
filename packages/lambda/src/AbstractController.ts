@@ -1,11 +1,13 @@
 
-export abstract class AbstractController<T, R> {
-    protected mapping: any;
+interface Nothing {}
+
+export abstract class AbstractController<T, R, W = Nothing> {
+    protected wires: W;
     protected buildFingerprint: string;
     protected context: any = {};
      
-    initialize(mapping: any, buildFingerprint: string) {
-        this.mapping = mapping
+    initialize(wires: W, buildFingerprint: string) {
+        this.wires = wires
         this.buildFingerprint = buildFingerprint
     }
 

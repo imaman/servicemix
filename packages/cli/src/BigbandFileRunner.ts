@@ -231,7 +231,8 @@ export class BigbandFileRunner {
             for (const wireModel of instrumentModel.wirings) {
                 const reg = wireModel.supplier.section.section.region
                 const arn = wireModel.supplier.arn
-                const src = wireModel.supplier.instrument.contributeToConsumerCode(reg, arn)
+                const src = wireModel.supplier.instrument.contributeToConsumerCode(reg, arn, 
+                    wireModel.supplier.physicalName)
                 // TODO(imaman): name should be valid TS identifier
                 const name = wireModel.name
                 if (src) {

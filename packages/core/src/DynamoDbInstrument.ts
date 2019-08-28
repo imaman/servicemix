@@ -93,11 +93,11 @@ export class DynamoDbInstrument extends Instrument {
     }
 
 
-    contributeToConsumerCode(region: string, myArn: string): string {
+    contributeToConsumerCode(region: string, myArn: string, physicalName: string): string {
         return `
             import { DynamoDbClient } from 'bigband-lambda'
 
-            export default new DynamoDbClient("${region}", "${myArn}")
+            export default new DynamoDbClient("${region}", "${physicalName}")
         `
     }
 

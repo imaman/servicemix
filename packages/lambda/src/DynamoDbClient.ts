@@ -35,7 +35,7 @@ export class DynamoDbClient {
         try {
             await this.docClient.put(req).promise()
         } catch(e) {
-            throw new Error(`Put operation failed on ${this} `)
+            throw new Error(`Put operation failed on ${this}: ${e.message}`)
         }
     }
 

@@ -37,7 +37,6 @@ export interface LogSamplerFetchRequest {
     key: string
 }
 
-
 export class LogSamplerController extends AbstractController<any, any> {
     private readonly model = new LogSamplerModel(1000);
 

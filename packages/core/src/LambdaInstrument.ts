@@ -143,7 +143,7 @@ export class LambdaInstrument extends Instrument {
         }));
     }
 
-    contributeToConsumerCode(region: string, myArn: string): string {
+    contributeToConsumerCode(region: string, myArn: string, _: string): string {
         return `
             import { LambdaClient } from 'bigband-lambda'
 

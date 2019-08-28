@@ -68,7 +68,7 @@ export abstract class Instrument {
      */
     abstract contributeToConsumerDefinition(section: Section, consumerDef: Definition, myArn: string): void
 
-    contributeToConsumerCode(region: string, myArn: string): string {
+    contributeToConsumerCode(region: string, myArn: string, physicalName: string): string {
         return ""
     }
 
