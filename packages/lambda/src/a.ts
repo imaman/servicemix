@@ -13,7 +13,7 @@ async function run() {
     // const dt = (t1 - t0) / 1000;
     // console.log('dt=' + dt)
 
-    for await (const x of c.query({v1: 'b'}, 'id = :v1', 10, '', 'id,t')) {
+    for await (const x of c.query({v1: 'b', v2: 2090, v3: 2099}, 'id = :v1 and t between :v2 and :v3', 100)) {
         console.log('x=' + JSON.stringify(x))
     }
 } 

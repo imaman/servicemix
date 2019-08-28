@@ -64,8 +64,8 @@ export class DynamoDbClient {
      * @param filterExpression example: 'contains (Subtitle, :topic)'
      * @param attributeNames 
      */
-    async* query(expressionAttributeValues: any, keyConditionExpression: string, limit: number, filterExpression: string = '', 
-            projectionExpression: string = '') {
+    async* query(expressionAttributeValues: any, keyConditionExpression: string, limit: number, 
+            expressionAttributeNames?: any, reqBase: any = {}) {
         if (limit <= 0) {
             throw new Error(`limit (${limit}) cannot be negative`)
         }
@@ -83,12 +83,10 @@ export class DynamoDbClient {
             TableName: this.tableName,
             ExpressionAttributeValues: expressionAttributeValues,
             KeyConditionExpression: keyConditionExpression,
-            ProjectionExpression: projectionExpression
+            ExpressionAttributeNames: expressionAttributeNames,
         };
 
-        if (filterExpression) {
-            req.FilterExpression = filterExpression
-        }
+        Object.assign(req, reqBase)
 
         try {
             while (limit > 0) {
@@ -110,6 +108,6 @@ export class DynamoDbClient {
     }
 
     toString(): string {
-        return `(DynamoDbClient region "${this.region}" ARN "${this.tableName}")`
+        return `(DynamoDbClient region "${this.region}" table "${this.tableName}")`
     }
 }

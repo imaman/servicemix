@@ -24,6 +24,10 @@ const placeFinder = new LambdaInstrument('geography', 'site-finder4', 'src/geogr
 
 const distanceTable = new DynamoDbInstrument('geography', 'distances4', {name: 'dist', type: DynamoDbAttributeType.NUMBER});
 
+const historyTable = new DynamoDbInstrument('misc', 'history',
+        {name: 'id', type: DynamoDbAttributeType.STRING},
+        {name: 't', type: DynamoDbAttributeType.NUMBER})
+
 
 
 // const healthChecker = new LambdaInstrument('geography', 'health-checker', 'src/geography/healthChecker', {
@@ -52,7 +56,7 @@ export function run() {
         sections: [
             {
                 section: prod,
-                instruments: [placeFinder, distanceTable],
+                instruments: [placeFinder, distanceTable, historyTable],
                 wiring: [
                     wire(placeFinder, "distanceTable", distanceTable)
                 ]
