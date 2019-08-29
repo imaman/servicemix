@@ -1,8 +1,11 @@
 import * as AWS from 'aws-sdk'
-import { GetItemInput, QueryInput, QueryOutput, ConsistentRead, ProjectionExpression, ConditionExpression, ExpressionAttributeNameMap, PositiveIntegerObject, ScanOutput, ScanInput, DeleteRequest, DeleteItemInput, UpdateItemInput, ScanSegment, ScanTotalSegments, Select } from 'aws-sdk/clients/dynamodb';
+import { GetItemInput, QueryInput, QueryOutput, ConsistentRead, ProjectionExpression, ConditionExpression, ExpressionAttributeNameMap, PositiveIntegerObject, ScanOutput, ScanInput, DeleteRequest, DeleteItemInput, UpdateItemInput, ScanSegment, ScanTotalSegments, Select, AttributeName } from 'aws-sdk/clients/dynamodb';
 
 
 (Symbol as any).asyncIterator = Symbol.asyncIterator || Symbol.for("Symbol.asyncIterator");
+
+
+export type ExpressionAttributeNames = string[] |  {[key: string]: AttributeName}
 
 export interface QueryOptions {
     Limit?: PositiveIntegerObject
@@ -131,7 +134,7 @@ export class DynamoDbClient {
      *      Can be empty.
      */
     async update(key: any, updateExpression: string, conditionExpression: string, expressionAttributeValues: any,
-            expressionAttributeNames: string[] = []): Promise<void> {
+            expressionAttributeNames: ExpressionAttributeNames = []): Promise<void> {
         const req: UpdateItemInput = {
             TableName: this.tableName,
             Key: key,
@@ -245,8 +248,8 @@ export class DynamoDbClient {
      *      Can be empty.
      */
     async* query(atMost: number, keyConditionExpression: string, filterExpression: string,
-            expressionAttributeValues: any, expressionAttributeNames: string[] = [], options: QueryOptions = {})
-            : AsyncIterableIterator<any> {
+            expressionAttributeValues: any, expressionAttributeNames: ExpressionAttributeNames = [],
+            options: QueryOptions = {}): AsyncIterableIterator<any> {
         if (atMost <= 0) {
             throw new Error(`atMost (${atMost}) must be positive`)
         }
@@ -293,7 +296,8 @@ export class DynamoDbClient {
      * @param options 
      */
     async* scan(filterExpression: string, expressionAttributeValues: any, atMost: number,
-            expressionAttributeNames: string[] = [], options: ScanOptions = {}): AsyncIterableIterator<any> {
+            expressionAttributeNames: ExpressionAttributeNames = [], options: ScanOptions = {})
+            : AsyncIterableIterator<any> {
         if (atMost <= 0) {
             throw new Error(`atMost (${atMost}) must be positive`)
         }
@@ -315,33 +319,23 @@ export class DynamoDbClient {
     }
 }
 
-
 function createValuesObject(a: any) {
-    let ret: any|undefined = undefined
-    for (let k in a) {
-        ret = ret || {}
-        const v = a[k]
-
-        if (!k.startsWith(':')) {
-            k = `:${k}`
-        }
-
-        ret[k] = v
-    }
-
-    return ret
+    return transformKeys(a, ':')
 }
 
-function createNamesObject(names: string[]) {
+function createNamesObject(names: ExpressionAttributeNames) {
+    if (!(names instanceof Array)) {
+        return transformKeys(names, '#')
+    }
+
     let ret: any|undefined = undefined
     for (const n of names) {
         ret = ret || {}
         ret[`#${n}`] = n
     }
 
-    return ret
+    return ret    
 }
-
 
 
 interface Req {
@@ -376,4 +370,22 @@ async function* execute<R extends Req, T extends Resp>(atMost: number, operation
     } catch(e) {
         throw new Error(`${operation} operation failed on ${desc}: ${e.message}`)
     }
+}
+
+
+
+function transformKeys(a: any, prefix: string) {
+    let ret: any|undefined = undefined
+    for (let k in a) {
+        ret = ret || {}
+        const v = a[k]
+
+        if (!k.startsWith(prefix)) {
+            k = `${prefix}${k}`
+        }
+
+        ret[k] = v
+    }
+
+    return ret
 }
