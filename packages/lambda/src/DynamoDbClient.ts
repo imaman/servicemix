@@ -1,5 +1,5 @@
 import * as AWS from 'aws-sdk'
-import { GetItemInput, QueryInput, QueryOutput, ConsistentRead, ProjectionExpression, ConditionExpression, ExpressionAttributeNameMap, PositiveIntegerObject, ScanOutput, ScanInput } from 'aws-sdk/clients/dynamodb';
+import { GetItemInput, QueryInput, QueryOutput, ConsistentRead, ProjectionExpression, ConditionExpression, ExpressionAttributeNameMap, PositiveIntegerObject, ScanOutput, ScanInput, DeleteRequest, DeleteItemInput, UpdateItemInput } from 'aws-sdk/clients/dynamodb';
 
 
 (Symbol as any).asyncIterator = Symbol.asyncIterator || Symbol.for("Symbol.asyncIterator");
@@ -61,6 +61,64 @@ export class DynamoDbClient {
             await this.docClient.put(req).promise()
         } catch(e) {
             throw new Error(`Put operation failed on ${this}: ${e.message}`)
+        }
+    }
+
+    async delete(key: any): Promise<any> {
+        const req: DeleteItemInput = {
+            TableName: this.tableName,
+            Key: key
+        }
+
+        try {
+            await this.docClient.delete(req).promise()
+        } catch(e) {
+            throw new Error(`Delete operation failed on ${this}: ${e.message}`)
+        }
+    }
+
+    /**
+     * Modifies an existing item, or creates one. 
+     * 
+     * Example:
+     * ```
+     * client.update({id: 'foo', timeMs: 1564617600000}, 'SET bookName = :v1', '', {v1: 'bar'})
+     * ```
+     * 
+     * @param key the primary key of the item to be updated. 
+     * @param updateExpression an expression that describes the attributes to be modfied. E.g.,
+     *      `'SET ProductCategory = :c, Price = :p'. The update will fail at runtime if this expression modifies
+     *      attributes that are part of the primary key. Update expression reference:
+     *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+     * @param conditionExpression a condition that must be satisfied in order for the update to take place. E.g.,
+     *      `'begins_with(bookName, :v3)'`. Can be empty. The update will fail at runtime if this condition is not
+     *      satisfied. Condition expression reference:
+     *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
+     * @param expressionAttributeValues values for the placeholders specified in the expression strings 
+     *      (updateExpression, conditionExpression). E.g., `{v1: 'foo', v2: 1564617600000, v3: 'Dublin'}`. The 
+     *      placeholders in the expression strings are colon-prefixed tokens, so the given example populates the
+     *      following placeholders: `:v1`, `:v2`, `:v3`
+     * @param expressionAttributeNames an array of strings for attribute name aliases specified in the expression
+     *      strings (updateExpression, conditionExpression). E.g., `['query', 'name']` will define the following
+     *      aliases `#query`, `#name`. Aliases are needed in cases where an attrbitue name happens to also be a
+     *      DynamoDB reserved word: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html.
+     *      Can be empty.
+     */
+    async update(key: any, updateExpression: string, conditionExpression: string, expressionAttributeValues: any,
+            expressionAttributeNames: string[] = []): Promise<void> {
+        const req: UpdateItemInput = {
+            TableName: this.tableName,
+            Key: key,
+            ExpressionAttributeValues: createValuesObject(expressionAttributeValues),
+            UpdateExpression: updateExpression,
+            ConditionExpression: conditionExpression || undefined,
+            ExpressionAttributeNames: createNamesObject(expressionAttributeNames)
+        };
+
+        try {
+            await this.docClient.update(req).promise()
+        } catch(e) {
+            throw new Error(`Update operation failed on ${this}: ${e.message}`)
         }
     }
 
@@ -131,12 +189,12 @@ export class DynamoDbClient {
      * @param expressionAttributeValues values for the placeholders specified in the expression strings 
      *      (keyConditionExpression, filterExpression). E.g., `{v1: 'foo', v2: 1564617600000, v3: 'Dublin'}`. The 
      *      placeholders in the expression strings are colon-prefixed tokens, so the given example populates the
-     *      following placeholders: `':v1', ':v2', ':v3'`
+     *      following placeholders: `:v1`, `:v2`, `:v3`
      * @param atMost an upper cap on the number of items to return. Actual number can be lower than that, in case the 
      *      table does not contain enough matching items.
      * @param expressionAttributeNames an array of strings for attribute name aliases specified in the expression
      *      strings (keyConditionExpression, filterExpression). E.g., `['query', 'name']` will define the following
-     *      aliases `'#query', '#name'`. Aliases are needed in cases where an attrbitue name happen to also be a
+     *      aliases `#query`, `#name`. Aliases are needed in cases where an attrbitue name happens to also be a
      *      DynamoDB reserved word: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html.
      *      Can be empty.
      */
@@ -158,6 +216,35 @@ export class DynamoDbClient {
         yield* execute(atMost, 'Query', this.toString(), req, () => this.docClient.query(req).promise())
     }
 
+    /**
+     * Fetches up to `atMost` items that match the given filter expression.
+     * 
+     * Example:
+     * ```
+     * client.scan('timeMs > :v1', {v1: 1564617600000}, 20)`
+     * ```
+     * 
+     * Returns an AsyncIterableIterator so call sites can use "for await" loops to iterate over the fetched items:
+     * ```
+     * for await (const item of client.scan('timeMs >: v1', {v1: 1564617600000}, 20))
+     *     console.log(item.id)
+     * }
+     * ```
+     * 
+     * @param filterExpression Conditions on the fetched items E.g., `'begins_with(bookName, :v3)'`. An empty string
+     *      means "fetch all".Condition expression reference:
+     *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
+     * @param expressionAttributeValues values for the placeholders specified in `filterExpression`.E.g., 
+     *      `{v1: 'foo', v2: 1564617600000}`. The placeholders in the expression strings are colon-prefixed tokens,
+     *      so the given example populates the following placeholders: `:v1`, `:v2`
+     * @param atMost an upper cap on the number of items to return. Actual number can be lower than that, in case the 
+     *      table does not contain enough matching items.
+     * @param expressionAttributeNames an array of strings for attribute name aliases specified in `filterExpression`.
+     *      E.g., `['query', 'name']` will define the following aliases `#query`, `#name`. Aliases are needed in cases
+     *      where an attrbitue name happens to also be a DynamoDB reserved word:
+     *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html. Can be empty.
+     * @param options 
+     */
     async* scan(filterExpression: string, expressionAttributeValues: any, atMost: number,
             expressionAttributeNames: string[] = [], options: ScanOptions = {}): AsyncIterableIterator<any> {
         if (atMost <= 0) {
@@ -209,17 +296,18 @@ function createNamesObject(names: string[]) {
 }
 
 
-interface A {
+
+interface Req {
+    ExclusiveStartKey?: any
+}
+
+interface Resp {
     Items?: any[]
     LastEvaluatedKey?: any
 }
 
-interface B {
-    ExclusiveStartKey?: any
-}
-
-
-async function* execute<R extends B, T extends A>(atMost: number, operation: string, desc: string, req: R, f: (r: R) => Promise<T>) {
+async function* execute<R extends Req, T extends Resp>(atMost: number, operation: string, desc: string, req: R,
+        f: (r: R) => Promise<T>) {
     try {
         let count = 0
         while (count < atMost) {

@@ -21,6 +21,23 @@ async function run() {
         console.log('x=' + JSON.stringify(x))
     }
 
+    console.log('-adding two items-')
+    await c.update({id: 'd', t: 100}, 'SET #query = :v1', '', {v1: 'foo'}, ['query'])
+    await c.update({id: 'd', t: 101}, 'SET #query = :v1', '', {v1: 'bar'}, ['query'])
+    console.log(JSON.stringify(await c.get({id: 'd', t: 100})))
+    console.log(JSON.stringify(await c.get({id: 'd', t: 101})))
+
+    console.log('-updating to qux-')
+    await c.update({id: 'd', t: 101}, 'SET #query = :v1', '', {v1: 'qux'}, ['query'])
+    console.log(JSON.stringify(await c.get({id: 'd', t: 100})))
+    console.log(JSON.stringify(await c.get({id: 'd', t: 101})))
+
+    // console.log('-deleting-')
+    // console.log(JSON.stringify(await c.get({id: 'c', t: 100})))
+    // console.log(JSON.stringify(await c.get({id: 'c', t: 101})))
+
+    return ''
+
     // for await (const x of c.scan('t < :v1', {v1: 2005}, 10, [])) {
     //     console.log('x=' + JSON.stringify(x))
     // }
