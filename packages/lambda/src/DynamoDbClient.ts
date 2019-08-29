@@ -67,7 +67,12 @@ export class DynamoDbClient {
         this.docClient = new AWS.DynamoDB.DocumentClient({region})
     }
 
-    async put(item: any): Promise<any> {
+    /**
+     * Creates a new item, or updates an existing one.
+     * 
+     * @param item the item to create/update.
+     */
+    async put(item: any): Promise<void> {
         const req = {
             TableName: this.tableName,
             Item: item
@@ -146,6 +151,17 @@ export class DynamoDbClient {
     /**
      * Retrieves the attributes of an item. Returns `undefined` if no item with the given key exists.
      * 
+     * Samples for common usage scenarios:
+     * 
+     * (1) Projection (retrieve just two attributes)
+     * ```
+     * client.get({id: 'd', t: 100}, {ProjectionExpression: 'bookName,isbn'})
+     * ```
+     * (2) Projection where the attribute name is a DynamoDB reserved word
+     * ```
+     * client.get({id: 'd', t: 100}, {ProjectionExpression: '#query', ExpressionAttributeNames: {"#query": "query"}})))
+     * ```
+     * 
      * @param key the primary key of the item to retrieve.
      * @param projectionExpression
      */
@@ -187,24 +203,30 @@ export class DynamoDbClient {
      * 
      * (1) condition on the range key
      * ```
-     * client.query('id = :v1 and timeMs between :v2 and :v3', '', {v1: userId, v2: startTimeMs, v3: endTimeMs}, 10)
+     * client.query(10, 'id = :v1 and timeMs between :v2 and :v3', '', {v1: userId, v2: startTimeMs, v3: endTimeMs})
      * ```
      * 
      * (2) filtering
      * ```
-     * client.query('id = :v1', 'bookName = :v2', {v1: 'foo', v2: 'bar'}, 10)
+     * client.query(10, 'id = :v1', 'bookName = :v2', {v1: 'foo', v2: 'bar'})
      * ```
      *
      * (3) projection
      * ```
-     * client.query('id = :v1', '', {v1: 'foo'}, 10, [], {ProjectionExpression: 'id,name'}))
+     * client.query(10, 'id = :v1', '', {v1: 'foo'}, [], {ProjectionExpression: 'id,name'}))
      * ```
      * 
      * (4) attributes with reserved names 
      * ```
-     * client.query('#name = :v1', '', {v1: 'qux'}, 10, ['name'])
+     * client.query(10, '#name = :v1', '', {v1: 'qux'}, ['name'])
+     * ```
+     * (5) Fetch at most one item
+     * ```
+     * client.query(1, '#name = :v1', '', {v1: 'qux'}, ['name'])
      * ```
      * 
+     * @param atMost a cap on the number of items to return. Actual number can be lower than that, in case the 
+     *      table does not contain enough matching items.
      * @param keyConditionExpression Conditions the primary key. E.g., `'id = :v1 and timeMs > :v2'`. Fails at runtime
      *      if refers to attributes that are not part of the primary key. Condition expression reference:
      *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
@@ -216,16 +238,15 @@ export class DynamoDbClient {
      *      (keyConditionExpression, filterExpression). E.g., `{v1: 'foo', v2: 1564617600000, v3: 'Dublin'}`. The 
      *      placeholders in the expression strings are colon-prefixed tokens, so the given example populates the
      *      following placeholders: `:v1`, `:v2`, `:v3`
-     * @param atMost an upper cap on the number of items to return. Actual number can be lower than that, in case the 
-     *      table does not contain enough matching items.
      * @param expressionAttributeNames an array of strings for attribute name aliases specified in the expression
      *      strings (keyConditionExpression, filterExpression). E.g., `['query', 'name']` will define the following
      *      aliases `#query`, `#name`. Aliases are needed in cases where an attrbitue name happens to also be a
      *      DynamoDB reserved word: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html.
      *      Can be empty.
      */
-    async* query(keyConditionExpression: string, filterExpression: string, expressionAttributeValues: any, 
-            atMost: number, expressionAttributeNames: string[] = [], options: QueryOptions = {}): AsyncIterableIterator<any> {
+    async* query(atMost: number, keyConditionExpression: string, filterExpression: string,
+            expressionAttributeValues: any, expressionAttributeNames: string[] = [], options: QueryOptions = {})
+            : AsyncIterableIterator<any> {
         if (atMost <= 0) {
             throw new Error(`atMost (${atMost}) must be positive`)
         }
@@ -263,7 +284,7 @@ export class DynamoDbClient {
      * @param expressionAttributeValues values for the placeholders specified in `filterExpression`.E.g., 
      *      `{v1: 'foo', v2: 1564617600000}`. The placeholders in the expression strings are colon-prefixed tokens,
      *      so the given example populates the following placeholders: `:v1`, `:v2`
-     * @param atMost an upper cap on the number of items to return. Actual number can be lower than that, in case the 
+     * @param atMost a cap on the number of items to return. Actual number can be lower than that, in case the 
      *      table does not contain enough matching items.
      * @param expressionAttributeNames an array of strings for attribute name aliases specified in `filterExpression`.
      *      E.g., `['query', 'name']` will define the following aliases `#query`, `#name`. Aliases are needed in cases

@@ -13,9 +13,9 @@ async function run() {
     // const dt = (t1 - t0) / 1000;
     // console.log('dt=' + dt
 
-    // for await (const x of c.query('id = :v1', 'begins_with(#query, :v2)', {v1: 'b', v2: 'qa_8'}, 10, ['query'])) {
-    //     console.log('x=' + JSON.stringify(x))
-    // }
+    for await (const x of c.query(10, 'id = :v1', 'begins_with(#query, :v2)', {v1: 'b', v2: 'qa_8'}, ['query'])) {
+        console.log('x=' + JSON.stringify(x))
+    }
 
     // for await (const x of c.scan('t < :v2', {v2: 2005}, 10)) {
     //     console.log('x=' + JSON.stringify(x))
@@ -24,7 +24,7 @@ async function run() {
     console.log('-adding two items-')
     await c.update({id: 'd', t: 100}, 'SET #query = :v1', '', {v1: 'foo'}, ['query'])
     await c.update({id: 'd', t: 101}, 'SET #query = :v1', '', {v1: 'bar'}, ['query'])
-    console.log(JSON.stringify(await c.get({id: 'd', t: 100}, {ProjectionExpression: 'id, query'})))
+    console.log(JSON.stringify(await c.get({id: 'd', t: 100}, {ProjectionExpression: 'id, #query', ExpressionAttributeNames: {"#query": "query"}})))
     console.log(JSON.stringify(await c.get({id: 'd', t: 101})))
 
     process.exit(-1)
