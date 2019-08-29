@@ -79,51 +79,61 @@ export class DynamoDbClient {
 
     /**
      * Fetches (possibly) multiples items that match the given key condition and filter expression. The key condition
-     * expression is a condition on the item's primary key (partition key + range key if there is one). The filter key 
-     * is an optional condition on the item's other attributes.
+     * expression is a condition on the item's primary key (partition key + range key if there is one). The filter
+     * expression is an optional condition on the item's remaining attributes.
      * 
      * Example:
      * ```
-     * client.query('id = :v1 and t between :v2 and :v3', '', {v1: 'a100', v2: 2090, v3: 2099}, 20)`
+     * client.query('id = :v1 and timeMs > :v2', '', {v1: 'foo', v2: 1564617600000}, 20)`
      * ```
      * 
      * Returns an AsyncIterableIterator so call sites can use "for await" loops to iterate over the fetched items:
      * ```
-     * for await (const item of client.query('id = :v1', '', {v1: 'alice'}, 1000))
+     * for await (const item of client.query('id = :v1 and timeMs > :v2', '', {v1: 'foo', v2: 1564617600000}, 20))
      *     console.log(item.id)
      * }
      * ```
      * 
      * Samples for common usage scenarios:
      * 
-     * (1) projection
+     * (1) condition on the range key
      * ```
-     * client.query('id = :v1', '', {v1: 'b'}, 10, [], {ProjectionExpression: 'id,name'}))
-     * ```
-     * 
-     * (2) keyword-attribute-name conflict 
-     * ```
-     * client.query('#query = :v1', '', {v1: 'foo'}, 10, ['query'])
+     * client.query('id = :v1 and timeMs between :v2 and :v3', '', {v1: userId, v2: startTimeMs, v3: endTimeMs}, 10)
      * ```
      * 
-     * (3) filtering
+     * (2) filtering
      * ```
-     * client.query('id = :v1', 'name = :v2', {v1: 'foo', v2: 'bar'}, 10)
+     * client.query('id = :v1', 'bookName = :v2', {v1: 'foo', v2: 'bar'}, 10)
+     * ```
+     *
+     * (3) projection
+     * ```
+     * client.query('id = :v1', '', {v1: 'foo'}, 10, [], {ProjectionExpression: 'id,name'}))
      * ```
      * 
-     * @param keyConditionExpression example: `'Season = :s and Episode > :e'`
-     * @param filterExpression example: `'Topic = :topic'`. Can be empty.
+     * (4) attributes with reserved names 
+     * ```
+     * client.query('#name = :v1', '', {v1: 'qux'}, 10, ['name'])
+     * ```
+     * 
+     * @param keyConditionExpression Conditions the primary key. E.g., `'id = :v1 and timeMs > :v2'`. Fails at runtime
+     *      if refers to attributes that are not part of the primary key. Condition expression reference:
+     *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
+     * @param filterExpression Conditions the remaining attributes (attributes that are not part of primary key). E.g.,
+     *      `'begins_with(bookName, :v3)'`. Can be empty. Fails at runtime if refers to attributes that are part of the
+     *      primary key. Condition expression reference:
+     *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
      * @param expressionAttributeValues values for the placeholders specified in the expression strings 
-     *      (keyConditionExpression, filterExpression). E.g., `{s: 2, e: 9, topic: 'PHRASE'}`. The placeholders in the 
-     *      expression strings are colon-prefixed tokens, so the given example defines the following placeholder:
-     *      `':s', ':e', ':topic'`
+     *      (keyConditionExpression, filterExpression). E.g., `{v1: 'foo', v2: 1564617600000, v3: 'Dublin'}`. The 
+     *      placeholders in the expression strings are colon-prefixed tokens, so the given example populates the
+     *      following placeholders: `':v1', ':v2', ':v3'`
      * @param atMost an upper cap on the number of items to return. Actual number can be lower than that, in case the 
      *      table does not contain enough matching items.
      * @param expressionAttributeNames an array of strings for attribute name aliases specified in the expression
      *      strings (keyConditionExpression, filterExpression). E.g., `['query', 'name']` will define the following
-     *      aliases `'#query', '#name'`. Aliases are needed in case an attrbitue name happen to also be a DynamoDB
-     *      reserved word (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html). Can be
-     *      empty.
+     *      aliases `'#query', '#name'`. Aliases are needed in cases where an attrbitue name happen to also be a
+     *      DynamoDB reserved word: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html.
+     *      Can be empty.
      */
     //     * @param filterExpression example: 'contains (Subtitle, :topic)'
     //     * @param attributeNames 
