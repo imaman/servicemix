@@ -12,7 +12,6 @@ async function run() {
     // const t1 = Date.now()
     // const dt = (t1 - t0) / 1000;
     // console.log('dt=' + dt)
-
     for await (const x of c.query('#id = :v1', '', {v1: 'b'}, 10, ['id'], {ProjectionExpression: 'id,t'})) {
         console.log('x=' + JSON.stringify(x))
     }

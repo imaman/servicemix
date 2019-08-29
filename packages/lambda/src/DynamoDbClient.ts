@@ -83,23 +83,33 @@ export class DynamoDbClient {
      * is an optional condition on the item's other attributes.
      * 
      * Example:
-     *   `client.query('id = :v1 and t between :v2 and :v3', '', {v1: 'a100', v2: 2090, v3: 2099}, 20)`
+     * ```
+     * client.query('id = :v1 and t between :v2 and :v3', '', {v1: 'a100', v2: 2090, v3: 2099}, 20)`
+     * ```
      * 
      * Returns an AsyncIterableIterator so call sites can use "for await" loops to iterate over the fetched items:
-     *      for await (const item of client.query('id = :v1', '', {v1: 'alice'}, 1000))
-     *          console.log(item.id)
-     *      }
+     * ```
+     * for await (const item of client.query('id = :v1', '', {v1: 'alice'}, 1000))
+     *     console.log(item.id)
+     * }
+     * ```
      * 
      * Samples for common usage scenarios:
      * 
      * (1) projection
-     *   `client.query('id = :v1', '', {v1: 'b'}, 10, [], {ProjectionExpression: 'id,name'}))`
+     * ```
+     * client.query('id = :v1', '', {v1: 'b'}, 10, [], {ProjectionExpression: 'id,name'}))
+     * ```
      * 
      * (2) keyword-attribute-name conflict 
-     *   `client.query('#query = :v1', '', {v1: 'foo'}, 10, ['query'])`
+     * ```
+     * client.query('#query = :v1', '', {v1: 'foo'}, 10, ['query'])
+     * ```
      * 
      * (3) filtering
-     *   `client.query('id = :v1', 'name = :v2', {v1: 'foo', v2: 'bar'}, 10)`
+     * ```
+     * client.query('id = :v1', 'name = :v2', {v1: 'foo', v2: 'bar'}, 10)
+     * ```
      * 
      * @param keyConditionExpression example: `'Season = :s and Episode > :e'`
      * @param filterExpression example: `'Topic = :topic'`
