@@ -112,7 +112,7 @@ export class DynamoDbClient {
      * ```
      * 
      * @param keyConditionExpression example: `'Season = :s and Episode > :e'`
-     * @param filterExpression example: `'Topic = :topic'`
+     * @param filterExpression example: `'Topic = :topic'`. Can be empty.
      * @param expressionAttributeValues values for the placeholders specified in the expression strings 
      *      (keyConditionExpression, filterExpression). E.g., `{s: 2, e: 9, topic: 'PHRASE'}`. The placeholders in the 
      *      expression strings are colon-prefixed tokens, so the given example defines the following placeholder:
@@ -122,7 +122,8 @@ export class DynamoDbClient {
      * @param expressionAttributeNames an array of strings for attribute name aliases specified in the expression
      *      strings (keyConditionExpression, filterExpression). E.g., `['query', 'name']` will define the following
      *      aliases `'#query', '#name'`. Aliases are needed in case an attrbitue name happen to also be a DynamoDB
-     *      reserved word (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html)
+     *      reserved word (https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html). Can be
+     *      empty.
      */
     //     * @param filterExpression example: 'contains (Subtitle, :topic)'
     //     * @param attributeNames 
