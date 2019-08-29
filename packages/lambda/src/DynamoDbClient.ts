@@ -1,5 +1,5 @@
 import * as AWS from 'aws-sdk'
-import { GetItemInput, QueryInput, QueryOutput, ConsistentRead, ProjectionExpression, ConditionExpression, ExpressionAttributeNameMap, PositiveIntegerObject } from 'aws-sdk/clients/dynamodb';
+import { GetItemInput, QueryInput, QueryOutput, ConsistentRead, ProjectionExpression, ConditionExpression, ExpressionAttributeNameMap, PositiveIntegerObject, ScanOutput, ScanInput } from 'aws-sdk/clients/dynamodb';
 
 
 (Symbol as any).asyncIterator = Symbol.asyncIterator || Symbol.for("Symbol.asyncIterator");
@@ -39,6 +39,11 @@ export interface QueryOptions {
      */
     ProjectionExpression?: ProjectionExpression
 }
+
+export interface ScanOptions {
+
+}
+
 export class DynamoDbClient {
     private readonly docClient: AWS.DynamoDB.DocumentClient
 
@@ -135,67 +140,105 @@ export class DynamoDbClient {
      *      DynamoDB reserved word: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html.
      *      Can be empty.
      */
-    //     * @param filterExpression example: 'contains (Subtitle, :topic)'
-    //     * @param attributeNames 
     async* query(keyConditionExpression: string, filterExpression: string, expressionAttributeValues: any, 
             atMost: number, expressionAttributeNames: string[] = [], options: QueryOptions = {}): AsyncIterableIterator<any> {
         if (atMost <= 0) {
             throw new Error(`atMost (${atMost}) must be positive`)
         }
-        for (const k in expressionAttributeValues) {
-            if (k.startsWith(':')) {
-                continue
-            }
-
-            const v = expressionAttributeValues[k]
-            expressionAttributeValues[':' + k] = v
-            delete expressionAttributeValues[k]
-        }
-
-
-        let expressionAttributeNamesObject: any|undefined = {}
-        for (const n of expressionAttributeNames) {
-            expressionAttributeNamesObject[`#${n}`] = n
-        }
-
-        if (!expressionAttributeNames.length) {
-            expressionAttributeNamesObject = undefined
-        }
-
         const req: QueryInput = {
             TableName: this.tableName,
-            ExpressionAttributeValues: expressionAttributeValues,
+            ExpressionAttributeValues: createValuesObject(expressionAttributeValues),
             KeyConditionExpression: keyConditionExpression,
             FilterExpression: filterExpression || undefined,
-            ExpressionAttributeNames: expressionAttributeNamesObject
+            ExpressionAttributeNames: createNamesObject(expressionAttributeNames)
         };
 
         Object.assign(req, options)
 
-        try {
-            let count = 0
-            while (count < atMost) {
-                const resp: QueryOutput = await this.docClient.query(req).promise()
-                let items = resp.Items || []
-                const numLeft = atMost - count
-                if (items.length > numLeft) {
-                    items = items.slice(0, numLeft)
-                }
-                yield* items
-                count += items.length
+        yield* execute(atMost, 'Query', this.toString(), req, () => this.docClient.query(req).promise())
+    }
 
-                if (!resp.LastEvaluatedKey) {
-                    return
-                }
-
-                req.ExclusiveStartKey = resp.LastEvaluatedKey
-            }
-        } catch(e) {
-            throw new Error(`Get operation failed on ${this}: ${e.message}`)
+    async* scan(filterExpression: string, expressionAttributeValues: any, atMost: number,
+            expressionAttributeNames: string[] = [], options: ScanOptions = {}): AsyncIterableIterator<any> {
+        if (atMost <= 0) {
+            throw new Error(`atMost (${atMost}) must be positive`)
         }
+
+        const req: ScanInput = {
+            TableName: this.tableName,
+            ExpressionAttributeValues: createValuesObject(expressionAttributeValues),
+            FilterExpression: filterExpression || undefined,
+            ExpressionAttributeNames: createNamesObject(expressionAttributeNames)
+        };
+
+        Object.assign(req, options)
+
+        yield* execute(atMost, 'Scan', this.toString(), req, () => this.docClient.scan(req).promise())
     }
 
     toString(): string {
         return `(DynamoDbClient region "${this.region}" table "${this.tableName}")`
+    }
+}
+
+
+function createValuesObject(a: any) {
+    let ret: any|undefined = undefined
+    for (let k in a) {
+        ret = ret || {}
+        const v = a[k]
+
+        if (!k.startsWith(':')) {
+            k = `:${k}`
+        }
+
+        ret[k] = v
+    }
+
+    return ret
+}
+
+function createNamesObject(names: string[]) {
+    let ret: any|undefined = undefined
+    for (const n of names) {
+        ret = ret || {}
+        ret[`#${n}`] = n
+    }
+
+    return ret
+}
+
+
+interface A {
+    Items?: any[]
+    LastEvaluatedKey?: any
+}
+
+interface B {
+    ExclusiveStartKey?: any
+}
+
+
+async function* execute<R extends B, T extends A>(atMost: number, operation: string, desc: string, req: R, f: (r: R) => Promise<T>) {
+    try {
+        let count = 0
+        while (count < atMost) {
+            const resp: T = await f(req)
+            let items = resp.Items || []
+            const numLeft = atMost - count
+            if (items.length > numLeft) {
+                items = items.slice(0, numLeft)
+            }
+            yield* items
+            count += items.length
+
+            if (!resp.LastEvaluatedKey) {
+                break
+            }
+
+            req.ExclusiveStartKey = resp.LastEvaluatedKey
+        }
+    } catch(e) {
+        throw new Error(`${operation} operation failed on ${desc}: ${e.message}`)
     }
 }

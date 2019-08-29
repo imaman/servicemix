@@ -11,10 +11,19 @@ async function run() {
     // }
     // const t1 = Date.now()
     // const dt = (t1 - t0) / 1000;
-    // console.log('dt=' + dt)
-    for await (const x of c.query('#id = :v1', '', {v1: 'b'}, 10, ['id'], {ProjectionExpression: 'id,t'})) {
+    // console.log('dt=' + dt
+
+    // for await (const x of c.query('id = :v1', 'begins_with(#query, :v2)', {v1: 'b', v2: 'qa_8'}, 10, ['query'])) {
+    //     console.log('x=' + JSON.stringify(x))
+    // }
+
+    for await (const x of c.scan('t < :v2', {v2: 2005}, 10)) {
         console.log('x=' + JSON.stringify(x))
     }
+
+    // for await (const x of c.scan('t < :v1', {v1: 2005}, 10, [])) {
+    //     console.log('x=' + JSON.stringify(x))
+    // }
 } 
 
 
