@@ -1,29 +1,13 @@
 import * as AWS from 'aws-sdk'
-import { GetItemInput, QueryInput, QueryOutput, ConsistentRead, ProjectionExpression, ConditionExpression, ExpressionAttributeNameMap, PositiveIntegerObject, ScanOutput, ScanInput, DeleteRequest, DeleteItemInput, UpdateItemInput } from 'aws-sdk/clients/dynamodb';
+import { GetItemInput, QueryInput, QueryOutput, ConsistentRead, ProjectionExpression, ConditionExpression, ExpressionAttributeNameMap, PositiveIntegerObject, ScanOutput, ScanInput, DeleteRequest, DeleteItemInput, UpdateItemInput, ScanSegment, ScanTotalSegments, Select } from 'aws-sdk/clients/dynamodb';
 
 
 (Symbol as any).asyncIterator = Symbol.asyncIterator || Symbol.for("Symbol.asyncIterator");
 
-// const client = new AWS.DynamoDB.DocumentClient({region: this.mapping.distanceTable.region});
-// const q = event.query;
-// const answers = lookup(q);
-
-// const req = {
-//     TableName: this.mapping.distanceTable.name,
-//     Item: {
-//         dist: answers[0].score,
-//         query: q,
-//         answers: answers,
-//         numAnswers: answers.length
-//     }
-// };
-// await client.put(req).promise();
-
-
 export interface QueryOptions {
     Limit?: PositiveIntegerObject
     /**
-     * Determines the read consistency model: If set to true, then the operation uses strongly consistent reads.
+     * Whether the query operation uses strongly consistent reads.
      */
     ConsistentRead?: ConsistentRead
     /**
@@ -35,13 +19,45 @@ export interface QueryOptions {
      */
     ExclusiveStartKey?: any
     /**
-     * A comma-separated string that identifies one or more attributes to retrieve from the table.
+     * A comma-separated string that identifies the specific attributes to retrieve.
      */
     ProjectionExpression?: ProjectionExpression
 }
 
 export interface ScanOptions {
+    /**
+     * Number of segments into that a parallel scan will be divided into. See 
+     * https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Scan.html#DDB-Scan-request-TotalSegments
+     */
+    TotalSegments?: ScanTotalSegments
+    /**
+     * identifies an individual segment to be scanned. See
+     * https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Scan.html#DDB-Scan-request-Segment
+     */
+    Segment?: ScanSegment
+    /**
+     * Whether all write operations that completed before the Scan began are guaranteed to be contained in the response.
+     * Defaults to false.
+     */
+    ConsistentRead?: ConsistentRead
+}
 
+export interface GetOptions {
+    /**
+     * Whether the get operation uses strongly consistent reads.
+     */
+    ConsistentRead?: ConsistentRead
+
+    /**
+     * A comma-separated string that identifies the specific attributes to retrieve.
+     */
+    ProjectionExpression?: ProjectionExpression
+
+    // TODO(imaman): elaborate
+    /**
+     * One or more substitution tokens for attribute names in an expression.
+     */
+    ExpressionAttributeNames?: ExpressionAttributeNameMap;
 }
 
 export class DynamoDbClient {
@@ -64,7 +80,12 @@ export class DynamoDbClient {
         }
     }
 
-    async delete(key: any): Promise<any> {
+    /**
+     * Removes an item from the table if it exists, otherwise this is a no-op.
+     * 
+     * @param key the primary key of the item to be removed.
+     */
+    async delete(key: any): Promise<void> {
         const req: DeleteItemInput = {
             TableName: this.tableName,
             Key: key
@@ -122,15 +143,20 @@ export class DynamoDbClient {
         }
     }
 
-    async get(key: any, ...attributesToGet: string[]): Promise<any> {
+    /**
+     * Retrieves the attributes of an item. Returns `undefined` if no item with the given key exists.
+     * 
+     * @param key the primary key of the item to retrieve.
+     * @param projectionExpression
+     */
+    async get(key: any, options: GetOptions = {}): Promise<any> {
         const req: GetItemInput = {
             TableName: this.tableName,
             Key: key,
+            // ProjectionExpression: projectionExpression || undefined
         }
 
-        if (attributesToGet.length) {
-            req.AttributesToGet = attributesToGet
-        }
+        Object.assign(req, options)
 
         try {
             const resp = await this.docClient.get(req).promise()

@@ -17,24 +17,36 @@ async function run() {
     //     console.log('x=' + JSON.stringify(x))
     // }
 
-    for await (const x of c.scan('t < :v2', {v2: 2005}, 10)) {
-        console.log('x=' + JSON.stringify(x))
-    }
+    // for await (const x of c.scan('t < :v2', {v2: 2005}, 10)) {
+    //     console.log('x=' + JSON.stringify(x))
+    // }
 
     console.log('-adding two items-')
     await c.update({id: 'd', t: 100}, 'SET #query = :v1', '', {v1: 'foo'}, ['query'])
     await c.update({id: 'd', t: 101}, 'SET #query = :v1', '', {v1: 'bar'}, ['query'])
-    console.log(JSON.stringify(await c.get({id: 'd', t: 100})))
+    console.log(JSON.stringify(await c.get({id: 'd', t: 100}, {ProjectionExpression: 'id, query'})))
     console.log(JSON.stringify(await c.get({id: 'd', t: 101})))
+
+    process.exit(-1)
 
     console.log('-updating to qux-')
     await c.update({id: 'd', t: 101}, 'SET #query = :v1', '', {v1: 'qux'}, ['query'])
     console.log(JSON.stringify(await c.get({id: 'd', t: 100})))
     console.log(JSON.stringify(await c.get({id: 'd', t: 101})))
 
-    // console.log('-deleting-')
-    // console.log(JSON.stringify(await c.get({id: 'c', t: 100})))
-    // console.log(JSON.stringify(await c.get({id: 'c', t: 101})))
+    console.log('-deleting-')
+    console.log(JSON.stringify(await c.delete({id: 'c', t: 100})))
+    console.log(JSON.stringify(await c.delete({id: 'c', t: 101})))
+
+    console.log('-getting one last time-')
+    console.log(JSON.stringify(await c.get({id: 'c', t: 100})))
+    console.log(JSON.stringify(await c.get({id: 'c', t: 101})))
+
+
+    console.log('-redeleting-')
+    console.log(JSON.stringify(await c.delete({id: 'c', t: 100})))
+    console.log(JSON.stringify(await c.delete({id: 'c', t: 101})))
+
 
     return ''
 
