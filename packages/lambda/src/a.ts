@@ -13,41 +13,46 @@ async function run() {
     // const dt = (t1 - t0) / 1000;
     // console.log('dt=' + dt
 
-    for await (const x of c.query(10, 'id = :v1', 'begins_with(#query, :v2)', {v1: 'b', v2: 'qa_8'}, ['query'])) {
-        console.log('x=' + JSON.stringify(x))
-    }
+    // for await (const x of c.query(10, 'id = :v1', 'begins_with(#query, :v2)', {v1: 'b', v2: 'qa_8'}, ['query'])) {
+    //     console.log('x=' + JSON.stringify(x))
+    // }
 
     // for await (const x of c.scan('t < :v2', {v2: 2005}, 10)) {
     //     console.log('x=' + JSON.stringify(x))
     // }
 
-    console.log('-adding two items-')
-    await c.update({id: 'd', t: 100}, 'SET #query = :v1', '', {v1: 'foo'}, ['query'])
-    await c.update({id: 'd', t: 101}, 'SET #query = :v1', '', {v1: 'bar'}, ['query'])
-    console.log(JSON.stringify(await c.get({id: 'd', t: 100}, {ProjectionExpression: 'id, #query', ExpressionAttributeNames: {"#query": "query"}})))
-    console.log(JSON.stringify(await c.get({id: 'd', t: 101})))
+    // console.log('-adding two items-')
+    // await c.update({id: 'd', t: 100}, 'SET #query = :v1', '', {v1: 'foo'}, ['query'])
+    // await c.update({id: 'd', t: 101}, 'SET #query = :v1', '', {v1: 'bar'}, ['query'])
+    // console.log(JSON.stringify(await c.get({id: 'd', t: 100}, {ProjectionExpression: 'id, #query', ExpressionAttributeNames: {"#query": "query"}})))
+    // console.log(JSON.stringify(await c.get({id: 'd', t: 101})))
 
-    process.exit(-1)
+    // console.log('-updating to qux-')
+    // await c.update({id: 'd', t: 101}, 'SET #query = :v1', '', {v1: 'qux'}, ['query'])
+    // console.log(JSON.stringify(await c.get({id: 'd', t: 100})))
+    // console.log(JSON.stringify(await c.get({id: 'd', t: 101})))
 
-    console.log('-updating to qux-')
-    await c.update({id: 'd', t: 101}, 'SET #query = :v1', '', {v1: 'qux'}, ['query'])
-    console.log(JSON.stringify(await c.get({id: 'd', t: 100})))
-    console.log(JSON.stringify(await c.get({id: 'd', t: 101})))
+    // console.log('-deleting-')
+    // console.log(JSON.stringify(await c.delete({id: 'c', t: 100})))
+    // console.log(JSON.stringify(await c.delete({id: 'c', t: 101})))
 
-    console.log('-deleting-')
-    console.log(JSON.stringify(await c.delete({id: 'c', t: 100})))
-    console.log(JSON.stringify(await c.delete({id: 'c', t: 101})))
-
-    console.log('-getting one last time-')
-    console.log(JSON.stringify(await c.get({id: 'c', t: 100})))
-    console.log(JSON.stringify(await c.get({id: 'c', t: 101})))
+    // console.log('-getting one last time-')
+    // console.log(JSON.stringify(await c.get({id: 'c', t: 100})))
+    // console.log(JSON.stringify(await c.get({id: 'c', t: 101})))
 
 
-    console.log('-redeleting-')
-    console.log(JSON.stringify(await c.delete({id: 'c', t: 100})))
-    console.log(JSON.stringify(await c.delete({id: 'c', t: 101})))
+    // console.log('-redeleting-')
+    // console.log(JSON.stringify(await c.delete({id: 'c', t: 100})))
+    // console.log(JSON.stringify(await c.delete({id: 'c', t: 101})))
 
 
+    c.put({id: 'd', t: 100, pk: 'x', sk: 'a_100'})
+    c.put({id: 'd', t: 101, pk: 'x', sk: 'b_101'})
+    c.put({id: 'd', t: 102, pk: 'x', sk: 'c_102'})
+
+    for await (const x of c.scan(10, 'pk = :pk and (begins_with(sk,:sk) or begins_with(sk, :sk1))', {pk: 'x', sk: 'a_', sk1: 'c_'})) {
+        console.log(JSON.stringify(x))
+    }
     return ''
 
     // for await (const x of c.scan('t < :v1', {v1: 2005}, 10, [])) {
