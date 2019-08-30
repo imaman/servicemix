@@ -115,7 +115,7 @@ export class DynamoDbClient {
     }
 
     /**
-     * Removes an item from the table if it exists, otherwise this is a no-op.
+     * Removes an item from the table if it exists. Silently returns otherwise.
      * 
      * @param key the primary key of the item to be removed.
      */
@@ -144,20 +144,17 @@ export class DynamoDbClient {
      * @param updateExpression an expression that describes the attributes to be modfied. E.g.,
      *      `'SET ProductCategory = :c, Price = :p'. The update will fail at runtime if this expression modifies
      *      attributes that are part of the primary key. Update expression reference:
-     *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html
+     *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html.
      * @param conditionExpression a condition that must be satisfied in order for the update to take place. E.g.,
      *      `'begins_with(bookName, :v3)'`. Can be empty. The update will fail at runtime if this condition is not
      *      satisfied. Condition expression reference:
-     *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
+     *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html.
      * @param expressionAttributeValues values for the placeholders specified in the expression strings 
      *      (updateExpression, conditionExpression). E.g., `{v1: 'foo', v2: 1564617600000, v3: 'Dublin'}`. The 
      *      placeholders in the expression strings are colon-prefixed tokens, so the given example populates the
-     *      following placeholders: `:v1`, `:v2`, `:v3`
-     * @param expressionAttributeNames an array of strings for attribute name aliases specified in the expression
-     *      strings (updateExpression, conditionExpression). E.g., `['query', 'name']` will define the following
-     *      aliases `#query`, `#name`. Aliases are needed in cases where an attrbitue name happens to also be a
-     *      DynamoDB reserved word: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html.
-     *      Can be empty.
+     *      following placeholders: `:v1`, `:v2`, `:v3`.
+     * @param expressionAttributeNames optionally defines aliases for attribute names to be used in the expression
+     *      strings.
      */
     async update(key: any, updateExpression: string, conditionExpression: string, expressionAttributeValues: any,
             expressionAttributeNames: ExpressionAttributeNames = []): Promise<void> {
@@ -267,11 +264,8 @@ export class DynamoDbClient {
      *      (keyConditionExpression, filterExpression). E.g., `{v1: 'foo', v2: 1564617600000, v3: 'Dublin'}`. The 
      *      placeholders in the expression strings are colon-prefixed tokens, so the given example populates the
      *      following placeholders: `:v1`, `:v2`, `:v3`
-     * @param expressionAttributeNames an array of strings for attribute name aliases specified in the expression
-     *      strings (keyConditionExpression, filterExpression). E.g., `['query', 'name']` will define the following
-     *      aliases `#query`, `#name`. Aliases are needed in cases where an attrbitue name happens to also be a
-     *      DynamoDB reserved word: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html.
-     *      Can be empty.
+     * @param expressionAttributeNames optionally defines aliases for attribute names to be used in the expression
+     *      strings.
      */
     async* query(atMost: number, keyConditionExpression: string, filterExpression: string,
             expressionAttributeValues: any, expressionAttributeNames: ExpressionAttributeNames = [],
@@ -312,10 +306,8 @@ export class DynamoDbClient {
      * @param expressionAttributeValues values for the placeholders specified in `filterExpression`.E.g., 
      *      `{v1: 'foo', v2: 1564617600000}`. The placeholders in the expression strings are colon-prefixed tokens,
      *      so the given example populates the following placeholders: `:v1`, `:v2`
-     * @param expressionAttributeNames an array of strings for attribute name aliases specified in `filterExpression`.
-     *      E.g., `['query', 'name']` will define the following aliases `#query`, `#name`. Aliases are needed in cases
-     *      where an attrbitue name happens to also be a DynamoDB reserved word:
-     *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html. Can be empty.
+     * @param expressionAttributeNames optionally defines aliases for attribute names to be used in the expression
+     *      strings.
      * @param options 
      */
     async* scan(atMost: number, filterExpression: string, expressionAttributeValues: any,
