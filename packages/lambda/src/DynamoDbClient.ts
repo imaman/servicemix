@@ -23,15 +23,15 @@ import { GetItemInput, QueryInput, ConsistentRead, ProjectionExpression, Express
  * `#`-prefix. For instance, `["timestamp", "query"]` aliases `#timestamp` to `timestamp` and `#query` to `query`.
  * 
  * (ii) a string-to-string mapping: This allows you set the alias string and the attribute name it refers to. For
- * instance, `{"t": "timestamp", "q": "query"} aliases `#t` to `timestamp` and `#q` to `query`.
+ * instance, `{t: "timestamp", q: "query"} aliases `#t` to `timestamp` and `#q` to `query`.
  * 
  * Note that (i) is terser and is more intuitive to readers of your code. You may still want to use (ii) in situations
- * where your expression repeatedly refers to long attribure names or attributes paths. 
+ * where your expression repeatedly refers to long attribure names. 
  *
  * Further details are explained under "ExpressionAttributeNames" in 
  * https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_KeysAndAttributes.html.
  */
-export type ExpressionAttributeNames = string[] |  {[key: string]: AttributeName}
+export type ExpressionAttributeNames = string[] |  {[key: string]: string}
 
 export interface QueryOptions {
     Limit?: PositiveIntegerObject

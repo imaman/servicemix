@@ -46,11 +46,10 @@ async function run() {
     // console.log(JSON.stringify(await c.delete({id: 'c', t: 101})))
 
 
-    c.put({id: 'd', t: 100, pk: 'x', sk: 'a_100'})
-    c.put({id: 'd', t: 101, pk: 'x', sk: 'b_101'})
-    c.put({id: 'd', t: 102, pk: 'x', sk: 'c_102'})
+    c.put({id: 'd', t: 100, address: { home: {city: 'TLV', street: 'S1'}, work: {city: 'HFA', street: 'S2'}}})
+    c.put({id: 'd', t: 101, address: { home: {city: 'TLV', street: 'S3'}, work: {city: 'HFA', street: 'S4'}}})
 
-    for await (const x of c.scan(10, 'pk = :pk and (begins_with(sk,:sk) or begins_with(sk, :sk1))', {pk: 'x', sk: 'a_', sk1: 'c_'})) {
+    for await (const x of c.scan(10, '#a.#h.#c = :v1', {v1: 'TLV'}, {a: 'address', h: 'home', c: 'city'})) {
         console.log(JSON.stringify(x))
     }
     return ''
