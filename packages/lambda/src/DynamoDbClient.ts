@@ -1,37 +1,71 @@
 import * as AWS from 'aws-sdk'
 import { GetItemInput, QueryInput, ConsistentRead, ProjectionExpression, ExpressionAttributeNameMap, 
         PositiveIntegerObject, ScanInput, DeleteItemInput, UpdateItemInput, ScanSegment, ScanTotalSegments, 
-        AttributeName } from 'aws-sdk/clients/dynamodb';
+        AttributeName, 
+        StringAttributeValue, NumberAttributeValue, BinaryAttributeValue, StringSetAttributeValue, 
+        NumberSetAttributeValue, BinarySetAttributeValue, MapAttributeValue, ListAttributeValue, NullAttributeValue, 
+        BooleanAttributeValue,
+        ExpressionAttributeValueMap} from 'aws-sdk/clients/dynamodb';
 
+
+    
 
 (Symbol as any).asyncIterator = Symbol.asyncIterator || Symbol.for("Symbol.asyncIterator");
 
-/**
- * Definition of attribute name aliases that can be used in expression strings (updateExpression, 
- * conditionExpression, filterExpression, keyConditionExpression, etc.). A typical use case for name aliases, is that of
- * accessing an attribute whose name conflicts with a DynamoDB reserved word.
- *
- * For instance, if your items have an attribute called `timestamp` then you may want to write a filter expresion
- * that checks that the timestamp is greater than some value. If you try to naively write `timestamp > :v1` DynamoDB
- * will reject this expression because `timestamp` is a DynamoDB reserved word. To overcome this, you need to use name
- * aliases. Specifically, you need to use `#timestamp > :v1` as your expression and then define `#timestamp` as an 
- * alias to `timestamp`. The `#` prefix is mandatory and is the syntactic indication for name aliases in expressions.
- * 
- * The `ExpressionAttributeNames` type provides you with two ways to dedine name aliases
- * 
- * (i) an array of strings: This allows you to define aliases which are auto-derived from attribute names by adding a
- * `#`-prefix. For instance, `["timestamp", "query"]` aliases `#timestamp` to `timestamp` and `#query` to `query`.
- * 
- * (ii) a string-to-string mapping: This allows you set the alias string and the attribute name it refers to. For
- * instance, `{t: "timestamp", q: "query"} aliases `#t` to `timestamp` and `#q` to `query`.
- * 
- * Note that (i) is terser and is more intuitive to readers of your code. You may still want to use (ii) in situations
- * where your expression repeatedly refers to long attribure names. 
- *
- * Further details are explained under "ExpressionAttributeNames" in 
- * https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_KeysAndAttributes.html.
- */
 export type ExpressionAttributeNames = string[] |  {[key: string]: string}
+
+
+
+type AttributeValue =
+    StringAttributeValue |
+    NumberAttributeValue |
+    BinaryAttributeValue |
+    StringSetAttributeValue |
+    NumberSetAttributeValue |
+    BinarySetAttributeValue |
+    MapAttributeValue |
+    ListAttributeValue |
+    NullAttributeValue |
+    BooleanAttributeValue
+
+/**
+ * Defines value placeholders and name aliases that are used in expression strings (updateExpression, 
+ * conditionExpression, filterExpression, keyConditionExpression, etc.).
+ */
+interface ExpressionConfig {
+    /**
+     * values for the placeholders specified in the expression strings (updateExpression, conditionExpression, etc.). 
+     * E.g., `{v1: 'foo', v2: 1564617600000, v3: 'Dublin'}`. The placeholders in the expression strings are 
+     * colon-prefixed tokens, so the given example populates the following placeholders: `:v1`, `:v2`, `:v3`
+     */
+    values: {[key: string]: AttributeValue} 
+    /**
+     * Definition of attribute name aliases that can be used in expression strings (updateExpression, 
+     * conditionExpression, filterExpression, keyConditionExpression, etc.). A typical use case for name aliases, is
+     * that of accessing an attribute whose name conflicts with a DynamoDB reserved word.
+     *
+     * For instance, if your items have an attribute called `timestamp` then you may want to write a filter expresion
+     * that checks that the timestamp is greater than some value. If you try to naively write `timestamp > :v1` DynamoDB
+     * will reject this expression because `timestamp` is a DynamoDB reserved word. To overcome this, you need to use name
+     * aliases. Specifically, you need to use `#timestamp > :v1` as your expression and then define `#timestamp` as an 
+     * alias to `timestamp`. The `#` prefix is mandatory and is the syntactic indication for name aliases in expressions.
+     * 
+     * The `ExpressionAttributeNames` type provides you with two ways to dedine name aliases
+     * 
+     * (i) an array of strings: This allows you to define aliases which are auto-derived from attribute names by adding a
+     * `#`-prefix. For instance, `["timestamp", "query"]` aliases `#timestamp` to `timestamp` and `#query` to `query`.
+     * 
+     * (ii) a string-to-string mapping: This allows you set the alias string and the attribute name it refers to. For
+     * instance, `{t: "timestamp", q: "query"} aliases `#t` to `timestamp` and `#q` to `query`.
+     * 
+     * Note that (i) is terser and is more intuitive to readers of your code. You may still want to use (ii) in situations
+     * where your expression repeatedly refers to long attribure names. 
+     *
+     * Further details are explained under "ExpressionAttributeNames" in 
+     * https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_KeysAndAttributes.html.
+     */
+    aliases?: ExpressionAttributeNames
+}
 
 export interface QueryOptions {
     Limit?: PositiveIntegerObject
@@ -149,22 +183,16 @@ export class DynamoDbClient {
      *      `'begins_with(bookName, :v3)'`. Can be empty. The update will fail at runtime if this condition is not
      *      satisfied. Condition expression reference:
      *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html.
-     * @param expressionAttributeValues values for the placeholders specified in the expression strings 
-     *      (updateExpression, conditionExpression). E.g., `{v1: 'foo', v2: 1564617600000, v3: 'Dublin'}`. The 
-     *      placeholders in the expression strings are colon-prefixed tokens, so the given example populates the
-     *      following placeholders: `:v1`, `:v2`, `:v3`.
-     * @param expressionAttributeNames optionally defines aliases for attribute names to be used in the expression
-     *      strings.
+     * @param ec
      */
-    async update(key: any, updateExpression: string, conditionExpression: string, expressionAttributeValues: any,
-            expressionAttributeNames: ExpressionAttributeNames = []): Promise<void> {
+    async update(key: any, updateExpression: string, conditionExpression: string, ec: ExpressionConfig): Promise<void> {
         const req: UpdateItemInput = {
             TableName: this.tableName,
             Key: key,
-            ExpressionAttributeValues: createValuesObject(expressionAttributeValues),
+            ExpressionAttributeValues: createValuesObject(ec.values),
             UpdateExpression: updateExpression,
             ConditionExpression: conditionExpression || undefined,
-            ExpressionAttributeNames: createNamesObject(expressionAttributeNames)
+            ExpressionAttributeNames: createNamesObject(ec.aliases)
         };
 
         try {
@@ -260,22 +288,17 @@ export class DynamoDbClient {
      *      `'begins_with(bookName, :v3)'`. Can be empty. Fails at runtime if refers to attributes that are part of the
      *      primary key. Condition expression reference:
      *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
-     * @param expressionAttributeValues values for the placeholders specified in the expression strings 
-     *      (keyConditionExpression, filterExpression). E.g., `{v1: 'foo', v2: 1564617600000, v3: 'Dublin'}`. The 
-     *      placeholders in the expression strings are colon-prefixed tokens, so the given example populates the
-     *      following placeholders: `:v1`, `:v2`, `:v3`
-     * @param expressionAttributeNames optionally defines aliases for attribute names to be used in the expression
-     *      strings.
+     * @param ec
+     * @param options
      */
     async* query(atMost: number, keyConditionExpression: string, filterExpression: string,
-            expressionAttributeValues: any, expressionAttributeNames: ExpressionAttributeNames = [],
-            options: QueryOptions = {}): AsyncIterableIterator<any> {
+            ec: ExpressionConfig, options: QueryOptions = {}): AsyncIterableIterator<any> {
         const req: QueryInput = {
             TableName: this.tableName,
-            ExpressionAttributeValues: createValuesObject(expressionAttributeValues),
+            ExpressionAttributeValues: createValuesObject(ec.values),
             KeyConditionExpression: keyConditionExpression,
             FilterExpression: filterExpression || undefined,
-            ExpressionAttributeNames: createNamesObject(expressionAttributeNames)
+            ExpressionAttributeNames: createNamesObject(ec.aliases)
         };
 
         Object.assign(req, options)
@@ -303,21 +326,16 @@ export class DynamoDbClient {
      * @param filterExpression Conditions on the fetched items E.g., `'begins_with(bookName, :v3)'`. An empty string
      *      means "fetch all".Condition expression reference:
      *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
-     * @param expressionAttributeValues values for the placeholders specified in `filterExpression`.E.g., 
-     *      `{v1: 'foo', v2: 1564617600000}`. The placeholders in the expression strings are colon-prefixed tokens,
-     *      so the given example populates the following placeholders: `:v1`, `:v2`
-     * @param expressionAttributeNames optionally defines aliases for attribute names to be used in the expression
-     *      strings.
+     * @param ec 
      * @param options 
      */
-    async* scan(atMost: number, filterExpression: string, expressionAttributeValues: any,
-            expressionAttributeNames: ExpressionAttributeNames = [], options: ScanOptions = {})
+    async* scan(atMost: number, filterExpression: string, ec: ExpressionConfig, options: ScanOptions = {})
             : AsyncIterableIterator<any> {
         const req: ScanInput = {
             TableName: this.tableName,
-            ExpressionAttributeValues: createValuesObject(expressionAttributeValues),
+            ExpressionAttributeValues: createValuesObject(ec.values),
             FilterExpression: filterExpression || undefined,
-            ExpressionAttributeNames: createNamesObject(expressionAttributeNames)
+            ExpressionAttributeNames: createNamesObject(ec.aliases)
         };
 
         Object.assign(req, options)
@@ -334,7 +352,10 @@ function createValuesObject(a: any) {
     return transformKeys(a, ':')
 }
 
-function createNamesObject(names: ExpressionAttributeNames) {
+function createNamesObject(names?: ExpressionAttributeNames) {
+    if (!names) {
+        return undefined
+    }
     if (!(names instanceof Array)) {
         return transformKeys(names, '#')
     }

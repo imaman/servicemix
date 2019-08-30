@@ -47,10 +47,14 @@ async function run() {
 
 
     c.put({id: 'd', t: 100, address: { home: {city: 'TLV', street: 'S1'}, work: {city: 'HFA', street: 'S2'}}})
-    c.put({id: 'd', t: 101, address: { home: {city: 'TLV', street: 'S3'}, work: {city: 'HFA', street: 'S4'}}})
+    c.put({id: 'd', t: 101, address: { home: {city: 'TLV', street: 'S3'}, work: {city: 'SFO', street: 'S4'}}})
 
-    for await (const x of c.scan(10, '#a.#h.#c = :v1', {v1: 'TLV'}, {a: 'address', h: 'home', c: 'city'})) {
-        console.log(JSON.stringify(x))
+    for await (const x of c.scan(10, '#a.#h.#c = :v1', {values: {v1: 'TLV'}, aliases: {a: 'address', h: 'home', c: 'city'}})) {
+        console.log('xxs='  + JSON.stringify(x))
+    }
+
+    for await (const x of c.query(10, 'id = :v1', 'address.#work.city = :v2', {values: {v1: 'd', v2: 'HFA'}, aliases: ['work']})) {
+        console.log('xxt=' + JSON.stringify(x))
     }
     return ''
 
