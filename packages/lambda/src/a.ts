@@ -45,6 +45,13 @@ async function toArr(g): Promise<any[]> {
     return ret
 }
 
+
+// put
+// delete
+// update
+// get
+// query
+// scan
 async function run() {
     const c = new DynamoDbClient('eu-west-2', 'bb-example-d38-prod-misc-history')
 
