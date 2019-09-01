@@ -144,20 +144,26 @@ export interface Fetcher {
 
 class QueryFetcher implements Fetcher {
 
-    constructor(private readonly req: QueryInput, private readonly docClient: AWS.DynamoDB.DocumentClient) {}
+    constructor(private readonly req: QueryInput, 
+            private readonly docClientFactory: (o: any) => AWS.DynamoDB.DocumentClient, private readonly description) {}
 
     async* fetch(options: FetchOptions): AsyncIterableIterator<any> {
-        yield* execute(options.numItems, 'Query', 'foo-bar', this.req, (r) => this.docClient.query(r).promise())
+        const c = this.docClientFactory({maxRetries: 0, httpOptions: {timeout: options.timeoutMs}});
+        this.req.ConsistentRead = options.stronglyConsistent || false
+        yield* execute(options.numItems, 'Query', this.description, this.req, (r) => c.query(r).promise())
     }
 
 }
 
 class ScanFetcher implements Fetcher {
 
-    constructor(private readonly req: ScanInput, private readonly docClient: AWS.DynamoDB.DocumentClient) {}
-
+    constructor(private readonly req: ScanInput,
+        private readonly docClientFactory: (o: any) => AWS.DynamoDB.DocumentClient, private readonly description) {}
+        
     async* fetch(options: FetchOptions): AsyncIterableIterator<any> {
-        yield* execute(options.numItems, 'Scan', 'foo-bar', this.req, (r) => this.docClient.scan(r).promise())
+        const c = this.docClientFactory({maxRetries: 0, httpOptions: {timeout: options.timeoutMs}});
+        this.req.ConsistentRead = options.stronglyConsistent || false
+        yield* execute(options.numItems, 'Scan', this.description, this.req, (r) => c.scan(r).promise())
     }
 
 }
@@ -166,7 +172,12 @@ export class DynamoDbClient {
     private readonly docClient: AWS.DynamoDB.DocumentClient
 
     constructor(private readonly region: string, private readonly tableName: string) {
-        this.docClient = new AWS.DynamoDB.DocumentClient({region})
+        this.docClient = this.newDocumentClient({})
+    }
+
+    private newDocumentClient(options) {
+        const combinedOptions = Object.assign({}, options, {region: this.region})
+        return new AWS.DynamoDB.DocumentClient(combinedOptions)
     }
 
     /**
@@ -340,7 +351,7 @@ export class DynamoDbClient {
 
         Object.assign(req, options)
 
-        return new QueryFetcher(req, this.docClient)
+        return new QueryFetcher(req, opts => this.newDocumentClient(opts), this.toString())
     }
 
     /**
@@ -374,7 +385,7 @@ export class DynamoDbClient {
 
         Object.assign(req, options)
 
-        return new ScanFetcher(req, this.docClient)
+        return new ScanFetcher(req, opts => this.newDocumentClient(opts), this.toString())
     }
 
     toString(): string {
@@ -438,7 +449,7 @@ async function* execute<R extends Req, T extends Resp>(atMost: number, operation
             req.ExclusiveStartKey = resp.LastEvaluatedKey
         }
     } catch(e) {
-        throw new Error(`${operation} operation failed on ${desc}: ${e.message}`)
+        throw new Error(`Failure while performing an action (${operation}) on a DynamoDB table ${desc}. ${e.message}`)
     }
 }
 

@@ -2,5 +2,5 @@
 
 cd packages/lambda/src
 
-tsc --outDir ../lib a.ts && AWS_PROFILE=imaman node ../lib/a.js
+tsc --inlineSourceMap  --outDir ../lib a.ts && AWS_PROFILE=imaman node ../lib/a.js
 

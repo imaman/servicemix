@@ -75,12 +75,12 @@ async function run() {
     assertEq(await c.get({id, t: 100}), {id, t: 100, s: "s_0", text: 'foo'})
 
     assertEq(await toArr(c.query('id = :v1 and t >= :v2', '', {values: {v1: id, v2: 102}})
-            .fetch({numItems: 2, timeoutMs: 100})), [
+            .fetch({numItems: 2, timeoutMs: 2000})), [
         {id, t: 102, s: "s_2", text: 'bar'},
         {id, t: 103, s: "s_3", text: 'bar'}])
 
     assertEq(await toArr(c.query('id = :v1 and t >= :v2', '', {values: {v1: id, v2: 102}})
-            .fetch({numItems: 5, timeoutMs: 100})), [
+            .fetch({numItems: 5, timeoutMs: 2000})), [
         {id, t: 102, s: "s_2", text: 'bar'},
         {id, t: 103, s: "s_3", text: 'bar'},
         {id, t: 104, s: "s_4", text: 'foo'},
@@ -89,21 +89,21 @@ async function run() {
     ])
 
     assertEq(await toArr(c.query('id = :v1 and t >= :v2', '', {values: {v1: id, v2: 105}})
-            .fetch({numItems: 3, timeoutMs: 100})), [
+            .fetch({numItems: 3, timeoutMs: 2000})), [
         {id, t: 105, s: "s_5", text: 'baz'},
         {id, t: 106, s: "s_6", text: 'foo'},
         {id, t: 107, s: "s_7", text: 'baz'},
     ])
 
     assertEq(await toArr(c.query('id = :v1 and t between :v2 and :v3', '', {values: {v1: id, v2: 102, v3: 104}})
-            .fetch({numItems: 5, timeoutMs: 100})), [
+            .fetch({numItems: 5, timeoutMs: 2000})), [
         {id, t: 102, s: "s_2", text: 'bar'},
         {id, t: 103, s: "s_3", text: 'bar'},
         {id, t: 104, s: "s_4", text: 'foo'}
     ])
 
     assertEq(await toArr(c.query('id = :v1', '#text = :v2', {values: {v1: id, v2: 'foo'}, aliases: ['text']})
-            .fetch({numItems: 20, timeoutMs: 100})), [
+            .fetch({numItems: 20, timeoutMs: 2000})), [
         {id, t: 100, s: "s_0", text: 'foo'},
         {id, t: 104, s: "s_4", text: 'foo'},
         {id, t: 106, s: "s_6", text: 'foo'}
@@ -119,13 +119,18 @@ async function run() {
 
     const scanResult = await toArr(c.scan('(id = :v1 or id = :v2) and (#text = :v3)', 
             {values: {v1: id, v2: idB, v3: 'foo'}, aliases: ['text']})
-            .fetch({numItems: 20, timeoutMs: 100, stronglyConsistent: true}))
+            .fetch({numItems: 20, timeoutMs: 2000, stronglyConsistent: true}))
     assertEqUnordered(x => `${x.id}_${x.t}`, scanResult, [
             {id, s:"s_4", text: "foo", t: 104},
             {id, s:"s_6", text: "foo", t: 106},
             {id: idB, s:"s_0_b", text: "foo", t: 100},
             {id: idB, s:"s_2_b", text: "foo", t: 102},
         ])
+
+    const scanResult2 = await toArr(c.scan('(id = :v1 or id = :v2) and (#text = :v3)', 
+        {values: {v1: id, v2: idB, v3: 'foo'}, aliases: ['text']})
+        .fetch({numItems: 2, timeoutMs: 2000, stronglyConsistent: true}))
+    assertEq(scanResult2.length, 2)
 
     // const t0 = Date.now()
     // for (let i = 0; i < 200; ++i) {
@@ -190,8 +195,15 @@ async function run() {
     // }
 } 
 
+async function runGuard() {
+    try {
+        return run()
+    } catch (e) {
+        console.error('e=', e)
+    }
+}
 
-run()
+runGuard()
     .then(x => console.log(x))
     .catch(e => console.error('err=', e))
 
