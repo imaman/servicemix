@@ -152,6 +152,15 @@ class QueryFetcher implements Fetcher {
 
 }
 
+class ScanFetcher implements Fetcher {
+
+    constructor(private readonly req: ScanInput, private readonly docClient: AWS.DynamoDB.DocumentClient) {}
+
+    async* fetch(options: FetchOptions): AsyncIterableIterator<any> {
+        yield* execute(options.numItems, 'Scan', 'foo-bar', this.req, (r) => this.docClient.scan(r).promise())
+    }
+
+}
 
 export class DynamoDbClient {
     private readonly docClient: AWS.DynamoDB.DocumentClient
@@ -309,8 +318,6 @@ export class DynamoDbClient {
      * client.query(1, '#name = :v1', '', {v1: 'qux'}, ['name'])
      * ```
      * 
-     * @param atMost a cap on the number of items to return. Actual number can be lower than that, in case the 
-     *      table does not contain enough matching items.
      * @param keyConditionExpression Conditions the primary key. E.g., `'id = :v1 and timeMs > :v2'`. Fails at runtime
      *      if refers to attributes that are not part of the primary key. Condition expression reference:
      *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
@@ -351,16 +358,13 @@ export class DynamoDbClient {
      * }
      * ```
      * 
-     * @param atMost a cap on the number of items to return. Actual number can be lower than that, in case the 
-     *      table does not contain enough matching items.
      * @param filterExpression Conditions on the fetched items E.g., `'begins_with(bookName, :v3)'`. An empty string
      *      means "fetch all".Condition expression reference:
      *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
      * @param ec 
      * @param options 
      */
-    async* scan(atMost: number, filterExpression: string, ec: ExpressionConfig, options: ScanOptions = {})
-            : AsyncIterableIterator<any> {
+    scan(filterExpression: string, ec: ExpressionConfig, options: ScanOptions = {}): Fetcher {
         const req: ScanInput = {
             TableName: this.tableName,
             ExpressionAttributeValues: createValuesObject(ec.values),
@@ -370,7 +374,7 @@ export class DynamoDbClient {
 
         Object.assign(req, options)
 
-        yield* execute(atMost, 'Scan', this.toString(), req, () => this.docClient.scan(req).promise())
+        return new ScanFetcher(req, this.docClient)
     }
 
     toString(): string {
