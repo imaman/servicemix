@@ -131,7 +131,7 @@ export interface WriteExecutable {
 }
 
 export interface FetchOptions {
-    timeoutInMs: number
+    timeoutMs: number
     numItems: number
     stronglyConsistent?: boolean
 }
@@ -140,6 +140,17 @@ export interface Fetcher {
     fetch(options: FetchOptions): AsyncIterableIterator<any>
 }
 
+
+
+class QueryFetcher implements Fetcher {
+
+    constructor(private readonly req: QueryInput, private readonly docClient: AWS.DynamoDB.DocumentClient) {}
+
+    async* fetch(options: FetchOptions): AsyncIterableIterator<any> {
+        yield* execute(options.numItems, 'Query', 'foo-bar', this.req, (r) => this.docClient.query(r).promise())
+    }
+
+}
 
 
 export class DynamoDbClient {
@@ -310,8 +321,8 @@ export class DynamoDbClient {
      * @param ec
      * @param options
      */
-    async* query(atMost: number, keyConditionExpression: string, filterExpression: string,
-            ec: ExpressionConfig, options: QueryOptions = {}): AsyncIterableIterator<any> {
+    query(keyConditionExpression: string, filterExpression: string, ec: ExpressionConfig, options: QueryOptions = {})
+            : Fetcher {
         const req: QueryInput = {
             TableName: this.tableName,
             ExpressionAttributeValues: createValuesObject(ec.values),
@@ -322,7 +333,7 @@ export class DynamoDbClient {
 
         Object.assign(req, options)
 
-        yield* execute(atMost, 'Query', this.toString(), req, () => this.docClient.query(req).promise())
+        return new QueryFetcher(req, this.docClient)
     }
 
     /**

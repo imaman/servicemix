@@ -37,7 +37,7 @@ async function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function toArr(g): Promise<any[]> {
+async function toArr(g: AsyncIterableIterator<any>): Promise<any[]> {
     const ret: any[] = []
     for await (const x of g) {
         ret.push(x)
@@ -74,11 +74,11 @@ async function run() {
     await sleep(1000)
     assertEq(await c.get({id, t: 100}), {id, t: 100, s: "s_0", text: 'foo'})
 
-    assertEq(await toArr(c.query(2, 'id = :v1 and t >= :v2', '', {values: {v1: id, v2: 102}})), [
+    assertEq(await toArr(c.query('id = :v1 and t >= :v2', '', {values: {v1: id, v2: 102}}).fetch({numItems: 2, timeoutMs: 100})), [
         {id, t: 102, s: "s_2", text: 'bar'},
         {id, t: 103, s: "s_3", text: 'bar'}])
 
-    assertEq(await toArr(c.query(5, 'id = :v1 and t >= :v2', '', {values: {v1: id, v2: 102}})), [
+    assertEq(await toArr(c.query('id = :v1 and t >= :v2', '', {values: {v1: id, v2: 102}}).fetch({numItems: 5, timeoutMs: 100})), [
         {id, t: 102, s: "s_2", text: 'bar'},
         {id, t: 103, s: "s_3", text: 'bar'},
         {id, t: 104, s: "s_4", text: 'foo'},
@@ -86,19 +86,19 @@ async function run() {
         {id, t: 106, s: "s_6", text: 'foo'},
     ])
 
-    assertEq(await toArr(c.query(3, 'id = :v1 and t >= :v2', '', {values: {v1: id, v2: 105}})), [
+    assertEq(await toArr(c.query('id = :v1 and t >= :v2', '', {values: {v1: id, v2: 105}}).fetch({numItems: 3, timeoutMs: 100})), [
         {id, t: 105, s: "s_5", text: 'baz'},
         {id, t: 106, s: "s_6", text: 'foo'},
         {id, t: 107, s: "s_7", text: 'baz'},
     ])
 
-    assertEq(await toArr(c.query(5, 'id = :v1 and t between :v2 and :v3', '', {values: {v1: id, v2: 102, v3: 104}})), [
+    assertEq(await toArr(c.query('id = :v1 and t between :v2 and :v3', '', {values: {v1: id, v2: 102, v3: 104}}).fetch({numItems: 5, timeoutMs: 100})), [
         {id, t: 102, s: "s_2", text: 'bar'},
         {id, t: 103, s: "s_3", text: 'bar'},
         {id, t: 104, s: "s_4", text: 'foo'}
     ])
 
-    assertEq(await toArr(c.query(20, 'id = :v1', '#text = :v2', {values: {v1: id, v2: 'foo'}, aliases: ['text']})), [
+    assertEq(await toArr(c.query('id = :v1', '#text = :v2', {values: {v1: id, v2: 'foo'}, aliases: ['text']}).fetch({numItems: 20, timeoutMs: 100})), [
         {id, t: 100, s: "s_0", text: 'foo'},
         {id, t: 104, s: "s_4", text: 'foo'},
         {id, t: 106, s: "s_6", text: 'foo'}
