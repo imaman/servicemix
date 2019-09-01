@@ -106,7 +106,7 @@ async function run() {
 
 
     const scanResult = await toArr(c.scan(20, '(id = :v1 or id = :v2) and (#text = :v3)', 
-            {values: {v1: id, v2: idB, v3: 'foo'}, aliases: ['text']}))
+            {values: {v1: id, v2: idB, v3: 'foo'}, aliases: ['text']}, {ConsistentRead: true}))
     assertEqUnordered(x => `${x.id}_${x.t}`, scanResult, [
             {id, s:"s_4", text: "foo", t: 104},
             {id, s:"s_6", text: "foo", t: 106},
