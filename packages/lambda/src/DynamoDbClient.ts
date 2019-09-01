@@ -121,6 +121,27 @@ export interface GetOptions {
     ExpressionAttributeNames?: ExpressionAttributeNameMap;
 }
 
+
+export interface ExecOptions {
+    timeoutInMs: number
+}
+
+export interface WriteExecutable {
+    exec(options: ExecOptions): void
+}
+
+export interface FetchOptions {
+    timeoutInMs: number
+    numItems: number
+    stronglyConsistent?: boolean
+}
+
+export interface Fetcher {
+    fetch(options: FetchOptions): AsyncIterableIterator<any>
+}
+
+
+
 export class DynamoDbClient {
     private readonly docClient: AWS.DynamoDB.DocumentClient
 
