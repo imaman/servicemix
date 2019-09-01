@@ -56,6 +56,11 @@ async function run() {
     for await (const x of c.query(10, 'id = :v1', 'address.#work.city = :v2', {values: {v1: 'd', v2: 'HFA'}, aliases: ['work']})) {
         console.log('xxt=' + JSON.stringify(x))
     }
+
+    console.log('----------')
+    for await (const x of c.query(10, 'id = :v1 and (t = :v2 or t = :v3)', '', {values: {v1: 'd', v2: 100, v3: 101}})) {
+        console.log('x from sk q=' + JSON.stringify(x))
+    }
     return ''
 
     // for await (const x of c.scan('t < :v1', {v1: 2005}, 10, [])) {
