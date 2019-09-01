@@ -1,11 +1,9 @@
 import * as AWS from 'aws-sdk'
 import { GetItemInput, QueryInput, ConsistentRead, ProjectionExpression, ExpressionAttributeNameMap, 
         PositiveIntegerObject, ScanInput, DeleteItemInput, UpdateItemInput, ScanSegment, ScanTotalSegments, 
-        AttributeName, 
         StringAttributeValue, NumberAttributeValue, BinaryAttributeValue, StringSetAttributeValue, 
         NumberSetAttributeValue, BinarySetAttributeValue, MapAttributeValue, ListAttributeValue, NullAttributeValue, 
-        BooleanAttributeValue,
-        ExpressionAttributeValueMap} from 'aws-sdk/clients/dynamodb';
+        BooleanAttributeValue} from 'aws-sdk/clients/dynamodb';
 
 
     
@@ -176,7 +174,7 @@ export class DynamoDbClient {
      * 
      * @param key the primary key of the item to be updated. 
      * @param updateExpression an expression that describes the attributes to be modfied. E.g.,
-     *      `'SET ProductCategory = :c, Price = :p'. The update will fail at runtime if this expression modifies
+     *      `'SET ProductCategory = :c, Price = :p'`. The update will fail at runtime if this expression modifies
      *      attributes that are part of the primary key. Update expression reference:
      *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.UpdateExpressions.html.
      * @param conditionExpression a condition that must be satisfied in order for the update to take place. E.g.,
