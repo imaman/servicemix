@@ -58,19 +58,19 @@ async function run() {
     const id = uuidv1()
     const idB = uuidv1()
 
-    c.put({id: idB, t: 100, s: "s_0_b", text: 'foo'})
-    c.put({id: idB, t: 101, s: "s_1_b", text: 'bar'})
-    c.put({id: idB, t: 102, s: "s_2_b", text: 'foo'})
+    c.put({id: idB, t: 100, s: "s_0_b", text: 'foo'}).exec({timeoutInMs: 1000})
+    c.put({id: idB, t: 101, s: "s_1_b", text: 'bar'}).exec({timeoutInMs: 1000})
+    c.put({id: idB, t: 102, s: "s_2_b", text: 'foo'}).exec({timeoutInMs: 1000})
 
-    c.put({id, t: 100, s: "s_0", text: 'foo'})
-    c.put({id, t: 101, s: "s_1", text: 'bar'})
-    c.put({id, t: 105, s: "s_5", text: 'baz'})
-    c.put({id, t: 104, s: "s_4", text: 'foo'})
-    c.put({id, t: 102, s: "s_2", text: 'bar'})
-    c.put({id, t: 108, s: "s_8", text: 'baz'})
-    c.put({id, t: 106, s: "s_6", text: 'foo'})
-    c.put({id, t: 103, s: "s_3", text: 'bar'})
-    c.put({id, t: 107, s: "s_7", text: 'baz'})
+    c.put({id, t: 100, s: "s_0", text: 'foo'}).exec({timeoutInMs: 1000})
+    c.put({id, t: 101, s: "s_1", text: 'bar'}).exec({timeoutInMs: 1000})
+    c.put({id, t: 105, s: "s_5", text: 'baz'}).exec({timeoutInMs: 1000})
+    c.put({id, t: 104, s: "s_4", text: 'foo'}).exec({timeoutInMs: 1000})
+    c.put({id, t: 102, s: "s_2", text: 'bar'}).exec({timeoutInMs: 1000})
+    c.put({id, t: 108, s: "s_8", text: 'baz'}).exec({timeoutInMs: 1000})
+    c.put({id, t: 106, s: "s_6", text: 'foo'}).exec({timeoutInMs: 1000})
+    c.put({id, t: 103, s: "s_3", text: 'bar'}).exec({timeoutInMs: 1000})
+    c.put({id, t: 107, s: "s_7", text: 'baz'}).exec({timeoutInMs: 1000})
     await sleep(1000)
     assertEq(await c.get({id, t: 100}), {id, t: 100, s: "s_0", text: 'foo'})
 
@@ -109,11 +109,11 @@ async function run() {
         {id, t: 106, s: "s_6", text: 'foo'}
     ])
 
-    await c.update({id, t: 100}, 'SET s = :v1', '', {values: {v1: '0_0_0'}})
+    await c.update({id, t: 100}, 'SET s = :v1', '', {values: {v1: '0_0_0'}}).exec({timeoutInMs: 1000})
     assertEq(await c.get({id, t: 100}, {ConsistentRead: true}), {id, t: 100, s: '0_0_0', text: 'foo'})
 
 
-    await c.delete({id, t: 100})
+    await c.delete({id, t: 100}).exec({timeoutInMs: 1000})
     assertEq(await c.get({id, t: 100}, {ConsistentRead: true}), undefined)
 
 

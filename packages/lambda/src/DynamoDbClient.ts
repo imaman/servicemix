@@ -122,12 +122,31 @@ export interface GetOptions {
 }
 
 
-export interface ExecOptions {
+export interface ChangerOptions {
+    /**
+     * How long to wait for the response
+     */
     timeoutInMs: number
 }
 
-export interface WriteExecutable {
-    exec(options: ExecOptions): void
+export interface Changer {
+    exec(options: ChangerOptions): Promise<void>
+}
+
+class ChangerImpl implements Changer {
+    //         return new ChangerImpl(req, opts => this.newDocumentClient(opts), this.toString(), (c, r) => c.put(req))
+
+    constructor(private readonly op: string, private readonly clientFactory: (o: any) => AWS.DynamoDB.DocumentClient,
+        private readonly str: string, private readonly f: (c: AWS.DynamoDB.DocumentClient) => Promise<any>) {}
+
+    async exec(): Promise<void> {
+        try {
+            const c = this.clientFactory({})
+            this.f(c)
+        } catch(e) {
+            throw new Error(`Put operation failed on ${this.str}. ${e.message}`)
+        }
+    }
 }
 
 export interface FetchOptions {
@@ -145,7 +164,7 @@ export interface Fetcher {
 class QueryFetcher implements Fetcher {
 
     constructor(private readonly req: QueryInput, 
-            private readonly docClientFactory: (o: any) => AWS.DynamoDB.DocumentClient, private readonly description) {}
+            private readonly docClientFactory: (o: any) => AWS.DynamoDB.DocumentClient, private readonly description: string) {}
 
     async* fetch(options: FetchOptions): AsyncIterableIterator<any> {
         const c = this.docClientFactory({maxRetries: 0, httpOptions: {timeout: options.timeoutMs}});
@@ -158,7 +177,7 @@ class QueryFetcher implements Fetcher {
 class ScanFetcher implements Fetcher {
 
     constructor(private readonly req: ScanInput,
-        private readonly docClientFactory: (o: any) => AWS.DynamoDB.DocumentClient, private readonly description) {}
+        private readonly docClientFactory: (o: any) => AWS.DynamoDB.DocumentClient, private readonly description: string) {}
         
     async* fetch(options: FetchOptions): AsyncIterableIterator<any> {
         const c = this.docClientFactory({maxRetries: 0, httpOptions: {timeout: options.timeoutMs}});
@@ -185,17 +204,13 @@ export class DynamoDbClient {
      * 
      * @param item the item to create/update.
      */
-    async put(item: any): Promise<void> {
+    put(item: any): Changer {
         const req = {
             TableName: this.tableName,
             Item: item
         }
 
-        try {
-            await this.docClient.put(req).promise()
-        } catch(e) {
-            throw new Error(`Put operation failed on ${this}: ${e.message}`)
-        }
+        return new ChangerImpl("Put", opts => this.newDocumentClient(opts), this.toString(), c => c.put(req).promise())
     }
 
     /**
@@ -203,17 +218,13 @@ export class DynamoDbClient {
      * 
      * @param key the primary key of the item to be removed.
      */
-    async delete(key: any): Promise<void> {
+    delete(key: any): Changer {
         const req: DeleteItemInput = {
             TableName: this.tableName,
             Key: key
         }
 
-        try {
-            await this.docClient.delete(req).promise()
-        } catch(e) {
-            throw new Error(`Delete operation failed on ${this}: ${e.message}`)
-        }
+        return new ChangerImpl("Delete", opts => this.newDocumentClient(opts), this.toString(), c => c.delete(req).promise())
     }
 
     /**
@@ -235,7 +246,7 @@ export class DynamoDbClient {
      *      https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html.
      * @param ec
      */
-    async update(key: any, updateExpression: string, conditionExpression: string, ec: ExpressionConfig): Promise<void> {
+    update(key: any, updateExpression: string, conditionExpression: string, ec: ExpressionConfig): Changer {
         const req: UpdateItemInput = {
             TableName: this.tableName,
             Key: key,
@@ -245,11 +256,7 @@ export class DynamoDbClient {
             ExpressionAttributeNames: createNamesObject(ec.aliases)
         };
 
-        try {
-            await this.docClient.update(req).promise()
-        } catch(e) {
-            throw new Error(`Update operation failed on ${this}: ${e.message}`)
-        }
+        return new ChangerImpl("Update", opts => this.newDocumentClient(opts), this.toString(), c => c.update(req).promise())
     }
 
     /**
