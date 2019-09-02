@@ -126,7 +126,7 @@ export interface ChangerOptions {
     /**
      * How long to wait for the response
      */
-    timeoutInMs: number
+    timeoutMs: number
 }
 
 export interface Changer {
@@ -134,17 +134,15 @@ export interface Changer {
 }
 
 class ChangerImpl implements Changer {
-    //         return new ChangerImpl(req, opts => this.newDocumentClient(opts), this.toString(), (c, r) => c.put(req))
-
     constructor(private readonly op: string, private readonly clientFactory: (o: any) => AWS.DynamoDB.DocumentClient,
         private readonly str: string, private readonly f: (c: AWS.DynamoDB.DocumentClient) => Promise<any>) {}
 
-    async exec(): Promise<void> {
+    async exec(options: ChangerOptions): Promise<void> {
         try {
-            const c = this.clientFactory({})
+            const c = this.clientFactory({maxRetries: 0, httpOptions: {timeout: options.timeoutMs}})
             this.f(c)
         } catch(e) {
-            throw new Error(`Put operation failed on ${this.str}. ${e.message}`)
+            throw new Error(`${this.op} operation failed on ${this.str}. ${e.message}`)
         }
     }
 }
@@ -456,7 +454,7 @@ async function* execute<R extends Req, T extends Resp>(atMost: number, operation
             req.ExclusiveStartKey = resp.LastEvaluatedKey
         }
     } catch(e) {
-        throw new Error(`Failure while performing an action (${operation}) on a DynamoDB table ${desc}. ${e.message}`)
+        throw new Error(`Failure while performing an action (${operation}: ${JSON.stringify(req)}) on a DynamoDB table ${desc}. ${e.message}`)
     }
 }
 
